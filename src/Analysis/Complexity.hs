@@ -1,5 +1,5 @@
 module Analysis.Complexity where
 
 data Complexity
-  = Constant
+  = Constant !Int
   deriving (Eq, Ord, Read, Show)
