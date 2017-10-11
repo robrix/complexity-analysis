@@ -1,4 +1,4 @@
-module Analysis.Complexity where
+module Data.Complexity where
 
 data Complexity
   = Constant !Int

@@ -13,7 +13,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Analysis.Complexity
+  exposed-modules:     Data.Complexity
   -- other-modules:
   -- other-extensions:
   build-depends:       base >=4.10 && <4.11
