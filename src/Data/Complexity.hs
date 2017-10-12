@@ -131,10 +131,10 @@ class Eq name => Binder name value where
   substitute :: Subst name value -> value -> value
 
 instance Binder TName (CoAttr Type Error) where
-  substitute = flip (cata (\ ty s -> case ty of
-    ContinueF (TVar name)        -> fromMaybe (Continue (TVar name)) (substLookup name s)
-    ContinueF (ForAll name body) -> Continue (ForAll name (body (substDelete name s)))
-    ContinueF other              -> Continue (($ s) <$> other)
+  substitute = flip (cata (\ ty subst -> case ty of
+    ContinueF (TVar name)        -> fromMaybe (Continue (TVar name)) (substLookup name subst)
+    ContinueF (ForAll name body) -> Continue (ForAll name (body (substDelete name subst)))
+    ContinueF other              -> Continue (($ subst) <$> other)
     StopF err                    -> Stop err))
 
 
