@@ -89,7 +89,7 @@ deriving instance (Show (f (CoAttr f a)), Show a) => Show (CoAttr f a)
 
 
 newtype Env a = Env { getEnv :: [(Name, a)] }
-  deriving (Eq, Ord, Read, Show)
+  deriving (Eq, Monoid, Ord, Read, Semigroup, Show)
 
 envLookup :: Name -> Env a -> Maybe a
 envLookup name = lookup name . getEnv
