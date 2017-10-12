@@ -43,10 +43,10 @@ data CoAttr f a
   | Continue (f (CoAttr f a))
 
 
-newtype Env a = Env [(Name, a)]
+newtype Env a = Env { getEnv :: [(Name, a)] }
   deriving (Eq, Ord, Read, Show)
 
-newtype Subst a = Subst [(Name, a)]
+newtype Subst a = Subst { getSubst :: [(Name, a)] }
   deriving (Eq, Ord, Read, Show)
 
 type Error = String
