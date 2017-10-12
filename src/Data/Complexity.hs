@@ -39,7 +39,8 @@ data CoAttr f a
 
 
 type Env a = [(Name, a)]
-type Result = Either String
+type Error = String
+type Result = Either Error
 
 
 type FAlgebra f a = f a -> a
