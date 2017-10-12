@@ -133,10 +133,10 @@ instance Binder TName (CoAttr Type Error) where
 
 type Error = String
 
-type Infer = StateT (Subst TName (CoAttr Type Error)) (ReaderT (Env (Term Type)) (Fresh TName))
+type Elab = StateT (Subst TName (CoAttr Type Error)) (ReaderT (Env (Term Type)) (Fresh TName))
 
 
-unify :: CoAttr Type Error -> CoAttr Type Error -> Infer (CoAttr Type Error)
+unify :: CoAttr Type Error -> CoAttr Type Error -> Elab (CoAttr Type Error)
 unify (Stop err1)   (Stop err2)   = pure (Stop (err1 ++ err2))
 unify (Stop err1)   _             = pure (Stop err1)
 unify _             (Stop err2)   = pure (Stop err2)
@@ -148,7 +148,7 @@ unify (Continue t1) (Continue t2)
     (_,          TVar name2) -> bind name2 (Continue t1)
     (t1,         t2)         -> pure (Stop ("Cannot unify incompatible types " ++ show t1 ++ " and " ++ show t2))
 
-bind :: TName -> CoAttr Type Error -> Infer (CoAttr Type Error)
+bind :: TName -> CoAttr Type Error -> Elab (CoAttr Type Error)
 bind name ty
   | Set.member name (freeTypeVariables ty) = pure (Stop ("Cannot construct the infinite type " ++ show name ++ " = " ++ show ty))
   | otherwise                              = modify (substExtend name ty) >> pure ty
