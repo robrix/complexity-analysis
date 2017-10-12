@@ -30,8 +30,8 @@ data Expr a
   | If a a a
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
-abs :: Name -> Term Expr -> Term Expr
-abs name body = In (Abs name body)
+makeAbs :: Name -> Term Expr -> Term Expr
+makeAbs name body = In (Abs name body)
 
 maxBoundVariable :: Term Expr -> Maybe Name
 maxBoundVariable = cata $ \ expr -> case expr of
