@@ -47,6 +47,11 @@ type FAlgebra f a = f a -> a
 cata :: Functor f => FAlgebra f a -> Term f -> a
 cata algebra = go where go = algebra . fmap go . out
 
+type FCoalgebra f a = a -> f a
+
+ana :: Functor f => FCoalgebra f a -> a -> Term f
+ana coalgebra = go where go = In . fmap go . coalgebra
+
 type RAlgebra f a = f (Term f, a) -> a
 
 para :: Functor f => RAlgebra f a -> Term f -> a
