@@ -4,6 +4,7 @@ module Data.Complexity where
 import Control.Arrow ((&&&))
 import Control.Monad.Reader
 import Control.Monad.State
+import Data.Functor.Identity
 
 newtype Name = Name String
   deriving (Eq, Ord, Read, Show)
@@ -102,3 +103,5 @@ class Monad m => MonadFresh s m | m -> s where
 
 
 newtype FreshT s m a = FreshT { runFreshT :: s -> m (a, s) }
+
+type Fresh s = FreshT s Identity
