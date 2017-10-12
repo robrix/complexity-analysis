@@ -21,11 +21,11 @@ data Expr a
   | Var Name
   deriving (Foldable, Functor)
 
-newtype Term = In { out :: Expr Term }
+newtype Term f = In { out :: f (Term f) }
 
-data Attr a = Attr { attribute :: a, hole :: Expr (Attr a) }
+data Attr f a = Attr { attribute :: a, hole :: f (Attr f a) }
 
 type FAlgebra f a = f a -> a
 
-cata :: FAlgebra Expr a -> Term -> a
+cata :: Functor f => FAlgebra f a -> Term f -> a
 cata algebra = go where go = algebra . fmap go . out
