@@ -24,6 +24,7 @@ data Type a
   = TVar Name
   | ForAll Name a
   | a :-> a
+  | Bool
 
 infixr 0 :->
 
