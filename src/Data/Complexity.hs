@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances, FunctionalDependencies, GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances, FunctionalDependencies, GeneralizedNewtypeDeriving, MultiParamTypeClasses, UndecidableInstances #-}
 module Data.Complexity where
 
 import Control.Arrow ((&&&))
@@ -125,3 +125,6 @@ instance Monad m => Monad (FreshT s m) where
 
 instance (Enum s, Monad m) => MonadFresh s (FreshT s m) where
   fresh = FreshT (\ s -> pure (s, succ s))
+
+instance MonadFresh s m => MonadFresh s (ReaderT r m) where
+  fresh = lift fresh
