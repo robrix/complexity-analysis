@@ -58,7 +58,6 @@ newtype Subst a = Subst { getSubst :: [(Name, a)] }
   deriving (Eq, Ord, Read, Show)
 
 type Error = String
-type Result = Either Error
 
 type Infer = ReaderT (Env (Term Type)) (Fresh TName)
 
