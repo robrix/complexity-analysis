@@ -46,6 +46,9 @@ data CoAttr f a
 newtype Env a = Env { getEnv :: [(Name, a)] }
   deriving (Eq, Ord, Read, Show)
 
+envLookup :: Name -> Env a -> Maybe a
+envLookup name = lookup name . getEnv
+
 newtype Subst a = Subst { getSubst :: [(Name, a)] }
   deriving (Eq, Ord, Read, Show)
 
