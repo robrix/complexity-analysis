@@ -25,5 +25,7 @@ newtype Term = In { out :: Expr Term }
 
 data Attr a = Attr { attribute :: a, hole :: Expr (Attr a) }
 
-cata :: (Expr a -> a) -> Term -> a
+type FAlgebra f a = f a -> a
+
+cata :: FAlgebra Expr a -> Term -> a
 cata algebra = go where go = algebra . fmap go . out
