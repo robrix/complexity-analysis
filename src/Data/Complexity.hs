@@ -2,6 +2,7 @@
 module Data.Complexity where
 
 import Control.Arrow ((&&&))
+import Control.Monad.State
 
 newtype Name = Name String
   deriving (Eq, Ord, Read, Show)
@@ -45,6 +46,8 @@ type Env a = [(Name, a)]
 type Subst a = [(Name, a)]
 type Error = String
 type Result = Either Error
+
+type Infer = State TName
 
 
 type FAlgebra f a = f a -> a
