@@ -131,6 +131,12 @@ type Error = String
 type Infer = StateT (Subst TName (CoAttr Type Error)) (ReaderT (Env (Term Type)) (Fresh TName))
 
 
+bind :: TName -> CoAttr Type Error -> Infer (CoAttr Type Error)
+bind name ty
+  | Set.member name (freeTypeVariables ty) = pure (Stop ("Cannot construct the infinite type " ++ show name ++ " = " ++ show ty))
+  | otherwise                              = modify (substExtend name ty) >> pure ty
+
+
 class Monad monad => MonadFresh name monad | monad -> name where
   fresh :: monad name
 
