@@ -62,6 +62,9 @@ deriving instance Show (f (Term f)) => Show (Term f)
 
 data Attr f a = Attr { attr :: a, hole :: f (Attr f a) }
 
+data AttrF f a b = AttrF { attrF :: a, holeF :: f b }
+  deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
+
 deriving instance (Eq (f (Attr f a)), Eq a) => Eq (Attr f a)
 deriving instance (Ord (f (Attr f a)), Ord a) => Ord (Attr f a)
 deriving instance (Read (f (Attr f a)), Read a) => Read (Attr f a)
