@@ -128,21 +128,21 @@ instance Binder TName (CoAttr Type Error) where
 
 type Error = String
 
-type Infer = ReaderT (Env (Term Type)) (Fresh TName)
+type Infer = StateT (Subst TName (CoAttr Type Error)) (ReaderT (Env (Term Type)) (Fresh TName))
 
 
-class Monad m => MonadFresh s m | m -> s where
-  fresh :: m s
+class Monad monad => MonadFresh name monad | monad -> name where
+  fresh :: monad name
 
 
-newtype FreshT s m a = FreshT { runFreshT :: s -> m (a, s) }
+newtype FreshT name monad result = FreshT { runFreshT :: name -> monad (result, name) }
 
-type Fresh s = FreshT s Identity
+type Fresh name = FreshT name Identity
 
-instance Functor m => Functor (FreshT s m) where
+instance Functor monad => Functor (FreshT name monad) where
   fmap f (FreshT run) = FreshT (fmap (first f) . run)
 
-instance Monad m => Applicative (FreshT s m) where
+instance Monad monad => Applicative (FreshT name monad) where
   pure = FreshT . (pure .) . (,)
 
   f <*> a = FreshT (\ s -> do
@@ -150,13 +150,13 @@ instance Monad m => Applicative (FreshT s m) where
     (a', s'')<- runFreshT a s'
     pure (f' a', s''))
 
-instance Monad m => Monad (FreshT s m) where
+instance Monad monad => Monad (FreshT name monad) where
   return = pure
 
   a >>= f = FreshT (uncurry runFreshT . first f <=< runFreshT a)
 
-instance (Enum s, Monad m) => MonadFresh s (FreshT s m) where
+instance (Enum name, Monad monad) => MonadFresh name (FreshT name monad) where
   fresh = FreshT (\ s -> pure (s, succ s))
 
-instance MonadFresh s m => MonadFresh s (ReaderT r m) where
+instance MonadFresh name monad => MonadFresh name (ReaderT read monad) where
   fresh = lift fresh
