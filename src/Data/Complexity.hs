@@ -4,6 +4,7 @@ module Data.Complexity where
 import Control.Arrow ((&&&))
 import Control.Monad.Reader
 import Control.Monad.State
+import Data.Bifunctor (first)
 import Data.Functor.Identity
 
 newtype Name = Name String
@@ -105,3 +106,6 @@ class Monad m => MonadFresh s m | m -> s where
 newtype FreshT s m a = FreshT { runFreshT :: s -> m (a, s) }
 
 type Fresh s = FreshT s Identity
+
+instance Functor m => Functor (FreshT s m) where
+  fmap f (FreshT run) = FreshT (fmap (first f) . run)
