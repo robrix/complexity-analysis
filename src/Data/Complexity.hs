@@ -35,7 +35,7 @@ infixr 0 :->
 
 newtype Term f = In { out :: f (Term f) }
 
-data Attr f a = Attr { attribute :: a, hole :: f (Attr f a) }
+data Attr f a = Attr { attr :: a, hole :: f (Attr f a) }
 
 data CoAttr f a
   = Stop a
