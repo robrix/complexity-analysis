@@ -49,6 +49,9 @@ newtype Env a = Env { getEnv :: [(Name, a)] }
 envLookup :: Name -> Env a -> Maybe a
 envLookup name = lookup name . getEnv
 
+envExtend :: Name -> a -> Env a -> Env a
+envExtend name value = Env . ((name, value) :) . getEnv
+
 newtype Subst a = Subst { getSubst :: [(Name, a)] }
   deriving (Eq, Ord, Read, Show)
 
