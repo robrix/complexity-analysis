@@ -107,6 +107,9 @@ substDelete name = Subst . filter ((/= name) . fst) . getSubst
 substSingleton :: name -> value -> Subst name value
 substSingleton name value = Subst [(name, value)]
 
+substExtend :: Binder name value => name -> value -> Subst name value -> Subst name value
+substExtend name value = substCompose (substSingleton name value)
+
 substCompose :: Binder name value => Subst name value -> Subst name value -> Subst name value
 substCompose s1 s2 = Subst (List.unionBy ((==) `on` fst) (map (second (substitute s1)) (getSubst s2)) (getSubst s1))
 
