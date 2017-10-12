@@ -31,7 +31,7 @@ data Type a
   | ForAll TName a
   | a :-> a
   | Bool
-  deriving (Foldable, Functor, Traversable)
+  deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
 infixr 0 :->
 
