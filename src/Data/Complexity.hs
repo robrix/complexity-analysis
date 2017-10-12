@@ -58,3 +58,11 @@ histo :: Functor f => CVAlgebra f a -> Term f -> a
 histo algebra = go
   where go = algebra . fmap worker . out
         worker t = Attr (go t) (worker <$> out t)
+
+type CVCoalgebra f a = a -> f (CoAttr f a)
+
+futu :: Functor f => CVCoalgebra f a -> a -> Term f
+futu coalgebra = go
+  where go = In . fmap worker . coalgebra
+        worker (Stop a)     = go a
+        worker (Continue f) = In (fmap worker f)
