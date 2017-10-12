@@ -1,11 +1,11 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances, FunctionalDependencies, GeneralizedNewtypeDeriving, MultiParamTypeClasses, StandaloneDeriving, UndecidableInstances #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances, FunctionalDependencies, GeneralizedNewtypeDeriving, MultiParamTypeClasses, StandaloneDeriving, TypeFamilies, UndecidableInstances #-}
 module Data.Complexity where
 
-import Control.Arrow ((&&&))
 import Control.Monad ((<=<))
 import Control.Monad.Reader
 import Data.Bifunctor (first)
 import Data.Foldable (fold)
+import Data.Functor.Foldable (Recursive(..), Base)
 import Data.Functor.Identity
 import qualified Data.Set as Set
 
@@ -46,6 +46,10 @@ freeTypeVariables = cata $ \ ty -> case ty of
 
 newtype Term f = In { out :: f (Term f) }
 
+type instance Base (Term f) = f
+
+instance Functor f => Recursive (Term f) where project = out
+
 deriving instance Eq (f (Term f)) => Eq (Term f)
 deriving instance Ord (f (Term f)) => Ord (Term f)
 deriving instance Read (f (Term f)) => Read (Term f)
@@ -83,42 +87,6 @@ newtype Subst a = Subst { getSubst :: [(Name, a)] }
 type Error = String
 
 type Infer = ReaderT (Env (Term Type)) (Fresh TName)
-
-
-type FAlgebra f a = f a -> a
-
-cata :: Functor f => FAlgebra f a -> Term f -> a
-cata algebra = go where go = algebra . fmap go . out
-
-type FCoalgebra f a = a -> f a
-
-ana :: Functor f => FCoalgebra f a -> a -> Term f
-ana coalgebra = go where go = In . fmap go . coalgebra
-
-type RAlgebra f a = f (Term f, a) -> a
-
-para :: Functor f => RAlgebra f a -> Term f -> a
-para algebra = go where go = algebra . fmap (id &&& go) . out
-
-type RCoalgebra f a = a -> f (Either (Term f) a)
-
-apo :: Functor f => RCoalgebra f a -> a -> Term f
-apo coalgebra = go where go = In . fmap (either id go) . coalgebra
-
-type CVAlgebra f a = f (Attr f a) -> a
-
-histo :: Functor f => CVAlgebra f a -> Term f -> a
-histo algebra = go
-  where go = algebra . fmap worker . out
-        worker t = Attr (go t) (worker <$> out t)
-
-type CVCoalgebra f a = a -> f (CoAttr f a)
-
-futu :: Functor f => CVCoalgebra f a -> a -> Term f
-futu coalgebra = go
-  where go = In . fmap worker . coalgebra
-        worker (Stop a)     = go a
-        worker (Continue f) = In (fmap worker f)
 
 
 class Monad m => MonadFresh s m | m -> s where
