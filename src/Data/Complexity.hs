@@ -42,8 +42,12 @@ data CoAttr f a
   | Continue (f (CoAttr f a))
 
 
-type Env a = [(Name, a)]
-type Subst a = [(Name, a)]
+newtype Env a = Env [(Name, a)]
+  deriving (Eq, Ord, Read, Show)
+
+newtype Subst a = Subst [(Name, a)]
+  deriving (Eq, Ord, Read, Show)
+
 type Error = String
 type Result = Either Error
 
