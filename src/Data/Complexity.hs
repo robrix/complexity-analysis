@@ -4,7 +4,6 @@ module Data.Complexity where
 import Control.Arrow ((&&&))
 import Control.Monad ((<=<))
 import Control.Monad.Reader
-import Control.Monad.State
 import Data.Bifunctor (first)
 import Data.Functor.Identity
 
@@ -61,7 +60,7 @@ newtype Subst a = Subst { getSubst :: [(Name, a)] }
 type Error = String
 type Result = Either Error
 
-type Infer = ReaderT (Env (Term Type)) (State TName)
+type Infer = ReaderT (Env (Term Type)) (Fresh TName)
 
 
 type FAlgebra f a = f a -> a
