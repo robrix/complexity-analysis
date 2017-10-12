@@ -136,6 +136,31 @@ type Error = String
 type Elab = StateT (Subst TName (CoAttr Type Error)) (ReaderT (Env (Term Type)) (Fresh TName))
 
 
+elaborate :: Term Expr -> Elab (Attr Expr (CoAttr Type Error))
+elaborate (In (Abs n b)) = do
+  t <- fresh
+  b' <- local (envExtend n (In (TVar t))) (elaborate b)
+  pure (Attr (Continue (Continue (TVar t) :-> attr b')) (Abs n b'))
+elaborate (In (App f a)) = do
+  t <- fresh
+  f' <- elaborate f
+  a' <- elaborate a
+  fTy <- unify (attr f') (Continue (attr a' :-> Continue (TVar t)))
+  case fTy of
+    Continue (_ :-> returnTy) -> pure (Attr returnTy            (App f' a'))
+    _                         -> pure (Attr (Continue (TVar t)) (App f' a'))
+elaborate (In (Var n)) = do
+  env <- ask
+  pure (Attr (maybe (Stop ("undefined variable: " ++ show n)) (cata Continue) (envLookup n env)) (Var n))
+elaborate (In (Lit b)) = pure (Attr (Continue Bool) (Lit b))
+elaborate (In (If c t e)) = do
+  c' <- elaborate c
+  t' <- elaborate t
+  e' <- elaborate e
+  result <- unify (attr t') (attr e')
+  pure (Attr result (If c' t' e'))
+
+
 unify :: CoAttr Type Error -> CoAttr Type Error -> Elab (CoAttr Type Error)
 unify (Stop err1)   (Stop err2)   = pure (Stop (err1 ++ err2))
 unify (Stop err1)   _             = pure (Stop err1)
