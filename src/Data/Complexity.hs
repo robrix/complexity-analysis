@@ -34,6 +34,9 @@ newtype Term f = In { out :: f (Term f) }
 data Attr f a = Attr { attribute :: a, hole :: f (Attr f a) }
 
 
+type Env a = [(Name, a)]
+
+
 type FAlgebra f a = f a -> a
 
 cata :: Functor f => FAlgebra f a -> Term f -> a
