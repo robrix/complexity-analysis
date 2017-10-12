@@ -93,16 +93,16 @@ envLookup name = lookup name . getEnv
 envExtend :: Name -> a -> Env a -> Env a
 envExtend name value = Env . ((name, value) :) . getEnv
 
-newtype Subst a = Subst { getSubst :: [(TName, a)] }
+newtype Subst name value = Subst { getSubst :: [(name, value)] }
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
-substLookup :: TName -> Subst a -> Maybe a
+substLookup :: Eq name => name -> Subst name value -> Maybe value
 substLookup name = lookup name . getSubst
 
-substDelete :: TName -> Subst a -> Subst a
+substDelete :: Eq name => name -> Subst name value -> Subst name value
 substDelete name = Subst . filter ((/= name) . fst) . getSubst
 
-substSingleton :: TName -> a -> Subst a
+substSingleton :: name -> value -> Subst name value
 substSingleton name value = Subst [(name, value)]
 
 type Error = String
