@@ -39,6 +39,7 @@ data CoAttr f a
 
 
 type Env a = [(Name, a)]
+type Subst a = [(Name, a)]
 type Error = String
 type Result = Either Error
 
