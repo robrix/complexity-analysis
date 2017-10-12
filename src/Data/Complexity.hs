@@ -96,6 +96,9 @@ envExtend name value = Env . ((name, value) :) . getEnv
 newtype Subst a = Subst { getSubst :: [(TName, a)] }
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
+substLookup :: TName -> Subst a -> Maybe a
+substLookup name = lookup name . getSubst
+
 type Error = String
 
 type Infer = ReaderT (Env (Term Type)) (Fresh TName)
