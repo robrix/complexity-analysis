@@ -14,8 +14,8 @@ import Data.Maybe (fromMaybe)
 import Data.Semigroup (Semigroup(..))
 import qualified Data.Set as Set
 
-newtype Name = Name String
-  deriving (Eq, Ord, Read, Show)
+newtype Name = Name Int
+  deriving (Enum, Eq, Ord, Read, Show)
 
 data Complexity i
   = Constant i
