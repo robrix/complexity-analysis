@@ -35,6 +35,7 @@ data Attr f a = Attr { attribute :: a, hole :: f (Attr f a) }
 
 
 type Env a = [(Name, a)]
+type Result = Either String
 
 
 type FAlgebra f a = f a -> a
