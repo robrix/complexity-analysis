@@ -3,6 +3,7 @@ module Data.Complexity where
 
 import Control.Monad ((<=<))
 import Control.Monad.Reader
+import Control.Monad.State
 import Data.Bifunctor (first)
 import Data.Foldable (fold)
 import Data.Functor.Foldable (Recursive(..), Base)
@@ -93,7 +94,7 @@ envExtend :: Name -> a -> Env a -> Env a
 envExtend name value = Env . ((name, value) :) . getEnv
 
 newtype Subst a = Subst { getSubst :: [(Name, a)] }
-  deriving (Eq, Ord, Read, Show)
+  deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
 type Error = String
 
