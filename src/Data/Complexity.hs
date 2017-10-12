@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFoldable, DeriveFunctor #-}
 module Data.Complexity where
 
 newtype Name = Name String
@@ -18,6 +19,7 @@ data Expr a
   = Abs Name a
   | App a a
   | Var Name
+  deriving (Foldable, Functor)
 
 newtype Term = In { out :: Expr Term }
 
