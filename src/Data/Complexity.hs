@@ -11,6 +11,7 @@ import Data.Functor.Foldable (Recursive(..), Base)
 import Data.Functor.Identity
 import qualified Data.List as List
 import Data.Maybe (fromMaybe)
+import Data.Semigroup (Semigroup(..))
 import qualified Data.Set as Set
 
 newtype Name = Name String
@@ -99,9 +100,12 @@ envExtend name value = Env . ((name, value) :) . getEnv
 newtype Subst name value = Subst { getSubst :: [(name, value)] }
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
+instance Binder name value => Semigroup (Subst name value) where
+  Subst s1 <> Subst s2 = Subst (List.unionBy ((==) `on` fst) (map (second (substitute (Subst s1))) s2) s1)
+
 instance Binder name value => Monoid (Subst name value) where
   mempty = Subst []
-  mappend s1 s2 = Subst (List.unionBy ((==) `on` fst) (map (second (substitute s1)) (getSubst s2)) (getSubst s1))
+  mappend = (<>)
 
 substLookup :: Eq name => name -> Subst name value -> Maybe value
 substLookup name = lookup name . getSubst
