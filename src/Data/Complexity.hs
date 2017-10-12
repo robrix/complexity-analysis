@@ -2,6 +2,7 @@
 module Data.Complexity where
 
 import Control.Arrow ((&&&))
+import Control.Monad.Reader
 import Control.Monad.State
 
 newtype Name = Name String
@@ -51,7 +52,7 @@ newtype Subst a = Subst [(Name, a)]
 type Error = String
 type Result = Either Error
 
-type Infer = State TName
+type Infer = ReaderT (Env (Term Type)) (State TName)
 
 
 type FAlgebra f a = f a -> a
