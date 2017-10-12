@@ -1,7 +1,6 @@
 name:                complexity-analysis
 version:             0.0.0.0
 synopsis:            Complexity analysis using abstract definitional interpreters.
--- description:
 homepage:            https://github.com/robrix/complexity-analysis
 license:             BSD3
 license-file:        LICENSE
@@ -15,8 +14,6 @@ cabal-version:       >=1.10
 library
   exposed-modules:     Data.Complexity
                      , Data.Interval
-  -- other-modules:
-  -- other-extensions:
   build-depends:       base >=4.10 && <4.11
   hs-source-dirs:      src
   default-language:    Haskell2010
