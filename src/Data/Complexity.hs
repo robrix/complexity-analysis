@@ -18,15 +18,18 @@ data Complexity i
 infixl 7 :*
 infixr 9 :->
 
+
 data Expr a
   = Abs Name a
   | App a a
   | Var Name
   deriving (Foldable, Functor)
 
+
 newtype Term f = In { out :: f (Term f) }
 
 data Attr f a = Attr { attribute :: a, hole :: f (Attr f a) }
+
 
 type FAlgebra f a = f a -> a
 
