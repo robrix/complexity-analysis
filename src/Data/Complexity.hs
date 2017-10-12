@@ -142,7 +142,7 @@ type Error = String
 
 type Elab = StateT (Subst TName (CoAttr Type Error)) (ReaderT (Env (Term Type)) (Fresh TName))
 
-runElab :: Elab (Attr Expr (CoAttr Type Error)) -> (Attr Expr (CoAttr Type Error), Subst TName (CoAttr Type Error))
+runElab :: Elab a -> (a, Subst TName (CoAttr Type Error))
 runElab = fst . runIdentity . flip runFreshT (TName 0) . flip runReaderT mempty . flip runStateT mempty
 
 substElab :: Attr Expr (CoAttr Type Error) -> Subst TName (CoAttr Type Error) -> Attr Expr (CoAttr Type Error)
