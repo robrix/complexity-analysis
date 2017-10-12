@@ -99,3 +99,6 @@ futu coalgebra = go
 
 class Monad m => MonadFresh s m | m -> s where
   fresh :: m s
+
+
+newtype FreshT s m a = FreshT { runFreshT :: s -> m (a, s) }
