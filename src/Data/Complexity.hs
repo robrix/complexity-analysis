@@ -21,7 +21,7 @@ data Expr a
   | Var Name
   | Lit Bool
   | If a a a
-  deriving (Foldable, Functor, Traversable)
+  deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
 newtype TName = TName Int
   deriving (Enum, Eq, Ord, Read, Show)
