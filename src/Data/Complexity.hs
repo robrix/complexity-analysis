@@ -5,6 +5,7 @@ newtype Name = Name String
 
 data Complexity i
   = Constant i
+  | ForAll Name (Complexity i)
   | CVar Name
   | Complexity i :* Complexity i
   | Complexity i :-> Complexity i
