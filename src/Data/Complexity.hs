@@ -99,6 +99,9 @@ newtype Subst a = Subst { getSubst :: [(TName, a)] }
 substLookup :: TName -> Subst a -> Maybe a
 substLookup name = lookup name . getSubst
 
+substDelete :: TName -> Subst a -> Subst a
+substDelete name = Subst . filter ((/= name) . fst) . getSubst
+
 type Error = String
 
 type Infer = ReaderT (Env (Term Type)) (Fresh TName)
