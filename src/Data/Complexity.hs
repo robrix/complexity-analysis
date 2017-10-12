@@ -1,5 +1,5 @@
 module Data.Complexity where
 
-data Complexity
-  = Constant !Int
+data Complexity i
+  = Constant i
   deriving (Eq, Ord, Read, Show)
