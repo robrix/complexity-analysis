@@ -6,4 +6,5 @@ newtype Name = Name String
 data Complexity i
   = Constant i
   | CVar Name
+  | Complexity i :* Complexity i
   deriving (Eq, Ord, Read, Show)
