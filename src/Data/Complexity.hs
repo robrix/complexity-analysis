@@ -105,6 +105,7 @@ substDelete name = Subst . filter ((/= name) . fst) . getSubst
 substSingleton :: name -> value -> Subst name value
 substSingleton name value = Subst [(name, value)]
 
+
 class Eq name => Binder name value where
   substitute :: Subst name value -> value -> value
 
