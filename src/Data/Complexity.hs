@@ -18,6 +18,13 @@ data Expr a
   | Var Name
   deriving (Foldable, Functor)
 
+data Type a
+  = TVar Name
+  | ForAll Name a
+  | a :-> a
+
+infixr 0 :->
+
 
 newtype Term f = In { out :: f (Term f) }
 
