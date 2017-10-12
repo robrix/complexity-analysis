@@ -30,6 +30,24 @@ data Expr a
   | If a a a
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
+abs :: Name -> Term Expr -> Term Expr
+abs name body = In (Abs name body)
+
+(#) :: Term Expr -> Term Expr -> Term Expr
+func # arg = In (App func arg)
+
+infixl 9 #
+
+var :: Name -> Term Expr
+var name = In (Var name)
+
+bool :: Bool -> Term Expr
+bool b = In (Lit b)
+
+iff :: Term Expr -> Term Expr -> Term Expr -> Term Expr
+iff c t e = In (If c t e)
+
+
 newtype TName = TName Int
   deriving (Enum, Eq, Ord, Read, Show)
 
