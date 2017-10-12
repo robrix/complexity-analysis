@@ -24,6 +24,7 @@ data Type a
   | ForAll Name a
   | a :-> a
   | Bool
+  deriving (Foldable, Functor, Traversable)
 
 infixr 0 :->
 
