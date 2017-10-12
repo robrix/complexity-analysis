@@ -93,7 +93,7 @@ envLookup name = lookup name . getEnv
 envExtend :: Name -> a -> Env a -> Env a
 envExtend name value = Env . ((name, value) :) . getEnv
 
-newtype Subst a = Subst { getSubst :: [(Name, a)] }
+newtype Subst a = Subst { getSubst :: [(TName, a)] }
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
 type Error = String
