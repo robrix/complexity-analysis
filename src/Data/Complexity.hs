@@ -19,9 +19,12 @@ data Expr a
   | If a a a
   deriving (Foldable, Functor, Traversable)
 
+newtype TName = TName Int
+  deriving (Eq, Ord, Read, Show)
+
 data Type a
-  = TVar Name
-  | ForAll Name a
+  = TVar TName
+  | ForAll TName a
   | a :-> a
   | Bool
   deriving (Foldable, Functor, Traversable)
