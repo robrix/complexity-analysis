@@ -119,33 +119,33 @@ envLookup name = lookup name . getEnv
 envExtend :: Name -> a -> Env a -> Env a
 envExtend name value = Env . ((name, value) :) . getEnv
 
-newtype Subst name value = Subst { getSubst :: [(name, value)] }
+newtype Subst value = Subst { getSubst :: [(Name, value)] }
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
-instance Binder name value => Semigroup (Subst name value) where
+instance Binder value => Semigroup (Subst value) where
   Subst s1 <> Subst s2 = Subst (List.unionBy ((==) `on` fst) (map (second (substitute (Subst s1))) s2) s1)
 
-instance Binder name value => Monoid (Subst name value) where
+instance Binder value => Monoid (Subst value) where
   mempty = Subst []
   mappend = (<>)
 
-substLookup :: Eq name => name -> Subst name value -> Maybe value
+substLookup :: Name -> Subst value -> Maybe value
 substLookup name = lookup name . getSubst
 
-substDelete :: Eq name => name -> Subst name value -> Subst name value
+substDelete :: Name -> Subst value -> Subst value
 substDelete name = Subst . filter ((/= name) . fst) . getSubst
 
-substSingleton :: name -> value -> Subst name value
+substSingleton :: Name -> value -> Subst value
 substSingleton name value = Subst [(name, value)]
 
-substExtend :: Binder name value => name -> value -> Subst name value -> Subst name value
+substExtend :: Binder value => Name -> value -> Subst value -> Subst value
 substExtend name value = (substSingleton name value <>)
 
 
-class Eq name => Binder name value where
-  substitute :: Subst name value -> value -> value
+class Binder value where
+  substitute :: Subst value -> value -> value
 
-instance Binder Name (CoAttr Type Error) where
+instance Binder (CoAttr Type Error) where
   substitute = flip (cata (\ ty subst -> case ty of
     ContinueF (TVar name)        -> fromMaybe (Continue (TVar name)) (substLookup name subst)
     ContinueF (ForAll name body) -> Continue (ForAll name (body (substDelete name subst)))
@@ -155,12 +155,12 @@ instance Binder Name (CoAttr Type Error) where
 
 type Error = String
 
-type Elab = StateT (Subst Name (CoAttr Type Error)) (ReaderT (Env (Term Type)) (Fresh Name))
+type Elab = StateT (Subst (CoAttr Type Error)) (ReaderT (Env (Term Type)) (Fresh Name))
 
-runElab :: Elab a -> (a, Subst Name (CoAttr Type Error))
+runElab :: Elab a -> (a, Subst (CoAttr Type Error))
 runElab = fst . runIdentity . flip runFreshT (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-substElaborated :: Attr Expr (CoAttr Type Error) -> Subst Name (CoAttr Type Error) -> Attr Expr (CoAttr Type Error)
+substElaborated :: Attr Expr (CoAttr Type Error) -> Subst (CoAttr Type Error) -> Attr Expr (CoAttr Type Error)
 substElaborated = cata (\ (AttrF ty expr) subst -> Attr (substitute subst ty) (($ subst) <$> expr))
 
 
