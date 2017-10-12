@@ -52,6 +52,11 @@ type RAlgebra f a = f (Term f, a) -> a
 para :: Functor f => RAlgebra f a -> Term f -> a
 para algebra = go where go = algebra . fmap (id &&& go) . out
 
+type RCoalgebra f a = a -> f (Either (Term f) a)
+
+apo :: Functor f => RCoalgebra f a -> a -> Term f
+apo coalgebra = go where go = In . fmap (either id go) . coalgebra
+
 type CVAlgebra f a = f (Attr f a) -> a
 
 histo :: Functor f => CVAlgebra f a -> Term f -> a
