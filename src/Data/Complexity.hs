@@ -37,11 +37,11 @@ data Type a
 
 infixr 0 :->
 
-freeTypeVariables :: Term Type -> Set.Set TName
+freeTypeVariables :: CoAttr Type a -> Set.Set TName
 freeTypeVariables = cata $ \ ty -> case ty of
-  TVar name -> Set.singleton name
-  ForAll name body -> Set.delete name body
-  _ -> fold ty
+  ContinueF (TVar name)        -> Set.singleton name
+  ContinueF (ForAll name body) -> Set.delete name body
+  _                            -> fold ty
 
 
 newtype Term f = In { out :: f (Term f) }
