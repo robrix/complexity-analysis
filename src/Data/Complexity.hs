@@ -4,10 +4,12 @@ module Data.Complexity where
 import Control.Monad ((<=<))
 import Control.Monad.Reader
 import Control.Monad.State
-import Data.Bifunctor (first)
+import Data.Bifunctor (first, second)
 import Data.Foldable (fold)
+import Data.Function (on)
 import Data.Functor.Foldable (Recursive(..), Base)
 import Data.Functor.Identity
+import qualified Data.List as List
 import qualified Data.Set as Set
 
 newtype Name = Name String
@@ -104,6 +106,9 @@ substDelete name = Subst . filter ((/= name) . fst) . getSubst
 
 substSingleton :: name -> value -> Subst name value
 substSingleton name value = Subst [(name, value)]
+
+substCompose :: Binder name value => Subst name value -> Subst name value -> Subst name value
+substCompose s1 s2 = Subst (List.unionBy ((==) `on` fst) (map (second (substitute s1)) (getSubst s2)) (getSubst s1))
 
 
 class Eq name => Binder name value where
