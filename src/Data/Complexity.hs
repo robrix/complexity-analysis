@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FunctionalDependencies, GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
 module Data.Complexity where
 
 import Control.Arrow ((&&&))
@@ -95,3 +95,7 @@ futu coalgebra = go
   where go = In . fmap worker . coalgebra
         worker (Stop a)     = go a
         worker (Continue f) = In (fmap worker f)
+
+
+class Monad m => MonadFresh s m | m -> s where
+  fresh :: m s
