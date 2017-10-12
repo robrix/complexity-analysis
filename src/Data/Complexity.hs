@@ -2,6 +2,7 @@
 module Data.Complexity where
 
 import Control.Arrow ((&&&))
+import Control.Monad ((<=<))
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Bifunctor (first)
@@ -117,3 +118,8 @@ instance Monad m => Applicative (FreshT s m) where
     (f', s') <- runFreshT f s
     (a', s'')<- runFreshT a s'
     pure (f' a', s''))
+
+instance Monad m => Monad (FreshT s m) where
+  return = pure
+
+  a >>= f = FreshT (uncurry runFreshT . first f <=< runFreshT a)
