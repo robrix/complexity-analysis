@@ -13,3 +13,10 @@ data Complexity i
 
 infixl 7 :*
 infixr 9 :->
+
+data Expr a
+  = Abs Name a
+  | App a a
+  | Var Name
+
+newtype Term = In { out :: Expr Term }
