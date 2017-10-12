@@ -10,3 +10,5 @@ data Complexity i
   | Complexity i :* Complexity i
   | Complexity i :-> Complexity i
   deriving (Eq, Ord, Read, Show)
+
+infixr 9 :->
