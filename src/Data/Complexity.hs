@@ -48,19 +48,16 @@ iff :: Term Expr -> Term Expr -> Term Expr -> Term Expr
 iff c t e = In (If c t e)
 
 
-newtype TName = TName Int
-  deriving (Enum, Eq, Ord, Read, Show)
-
 data Type a
-  = TVar TName
-  | ForAll TName a
+  = TVar Name
+  | ForAll Name a
   | a :-> a
   | Bool
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
 infixr 0 :->
 
-freeTypeVariables :: CoAttr Type a -> Set.Set TName
+freeTypeVariables :: CoAttr Type a -> Set.Set Name
 freeTypeVariables = cata $ \ ty -> case ty of
   ContinueF (TVar name)        -> Set.singleton name
   ContinueF (ForAll name body) -> Set.delete name body
@@ -148,7 +145,7 @@ substExtend name value = (substSingleton name value <>)
 class Eq name => Binder name value where
   substitute :: Subst name value -> value -> value
 
-instance Binder TName (CoAttr Type Error) where
+instance Binder Name (CoAttr Type Error) where
   substitute = flip (cata (\ ty subst -> case ty of
     ContinueF (TVar name)        -> fromMaybe (Continue (TVar name)) (substLookup name subst)
     ContinueF (ForAll name body) -> Continue (ForAll name (body (substDelete name subst)))
@@ -158,12 +155,12 @@ instance Binder TName (CoAttr Type Error) where
 
 type Error = String
 
-type Elab = StateT (Subst TName (CoAttr Type Error)) (ReaderT (Env (Term Type)) (Fresh TName))
+type Elab = StateT (Subst Name (CoAttr Type Error)) (ReaderT (Env (Term Type)) (Fresh Name))
 
-runElab :: Elab a -> (a, Subst TName (CoAttr Type Error))
-runElab = fst . runIdentity . flip runFreshT (TName 0) . flip runReaderT mempty . flip runStateT mempty
+runElab :: Elab a -> (a, Subst Name (CoAttr Type Error))
+runElab = fst . runIdentity . flip runFreshT (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-substElaborated :: Attr Expr (CoAttr Type Error) -> Subst TName (CoAttr Type Error) -> Attr Expr (CoAttr Type Error)
+substElaborated :: Attr Expr (CoAttr Type Error) -> Subst Name (CoAttr Type Error) -> Attr Expr (CoAttr Type Error)
 substElaborated = cata (\ (AttrF ty expr) subst -> Attr (substitute subst ty) (($ subst) <$> expr))
 
 
@@ -204,7 +201,7 @@ unify (Continue t1) (Continue t2)
     (_,          TVar name2) -> bind name2 (Continue t1)
     (t1,         t2)         -> pure (Stop ("Cannot unify incompatible types " ++ show t1 ++ " and " ++ show t2))
 
-bind :: TName -> CoAttr Type Error -> Elab (CoAttr Type Error)
+bind :: Name -> CoAttr Type Error -> Elab (CoAttr Type Error)
 bind name ty
   | Set.member name (freeTypeVariables ty) = pure (Stop ("Cannot construct the infinite type " ++ show name ++ " = " ++ show ty))
   | otherwise                              = modify (substExtend name ty) >> pure ty
