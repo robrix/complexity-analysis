@@ -109,3 +109,11 @@ type Fresh s = FreshT s Identity
 
 instance Functor m => Functor (FreshT s m) where
   fmap f (FreshT run) = FreshT (fmap (first f) . run)
+
+instance Monad m => Applicative (FreshT s m) where
+  pure = FreshT . (pure .) . (,)
+
+  f <*> a = FreshT (\ s -> do
+    (f', s') <- runFreshT f s
+    (a', s'')<- runFreshT a s'
+    pure (f' a', s''))
