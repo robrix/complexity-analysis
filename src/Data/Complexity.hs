@@ -29,14 +29,16 @@ newtype Term f = In { out :: f (Term f) }
 data Attr f a = Attr { attribute :: a, hole :: f (Attr f a) }
 
 type FAlgebra f a = f a -> a
-type RAlgebra f a = f (Term f, a) -> a
-type CVAlgebra f a = f (Attr f a) -> a
 
 cata :: Functor f => FAlgebra f a -> Term f -> a
 cata algebra = go where go = algebra . fmap go . out
 
+type RAlgebra f a = f (Term f, a) -> a
+
 para :: Functor f => RAlgebra f a -> Term f -> a
 para algebra = go where go = algebra . fmap (id &&& go) . out
+
+type CVAlgebra f a = f (Attr f a) -> a
 
 histo :: Functor f => CVAlgebra f a -> Term f -> a
 histo algebra = go
