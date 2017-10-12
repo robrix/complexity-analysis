@@ -20,3 +20,5 @@ data Expr a
   | Var Name
 
 newtype Term = In { out :: Expr Term }
+
+data Attr a = Attr { attribute :: a, hole :: Expr (Attr a) }
