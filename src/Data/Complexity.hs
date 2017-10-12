@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, GeneralizedNewtypeDeriving #-}
 module Data.Complexity where
 
 import Control.Arrow ((&&&))
@@ -22,7 +22,7 @@ data Expr a
   deriving (Foldable, Functor, Traversable)
 
 newtype TName = TName Int
-  deriving (Eq, Ord, Read, Show)
+  deriving (Enum, Eq, Ord, Read, Show)
 
 data Type a
   = TVar TName
