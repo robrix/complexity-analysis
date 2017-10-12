@@ -160,3 +160,6 @@ instance (Enum name, Monad monad) => MonadFresh name (FreshT name monad) where
 
 instance MonadFresh name monad => MonadFresh name (ReaderT read monad) where
   fresh = lift fresh
+
+instance MonadFresh name monad => MonadFresh name (StateT state monad) where
+  fresh = lift fresh
