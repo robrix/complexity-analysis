@@ -102,6 +102,9 @@ substLookup name = lookup name . getSubst
 substDelete :: TName -> Subst a -> Subst a
 substDelete name = Subst . filter ((/= name) . fst) . getSubst
 
+substSingleton :: TName -> a -> Subst a
+substSingleton name value = Subst [(name, value)]
+
 type Error = String
 
 type Infer = ReaderT (Env (Term Type)) (Fresh TName)
