@@ -16,6 +16,8 @@ data Expr a
   = Abs Name a
   | App a a
   | Var Name
+  | Lit Bool
+  | If a a a
   deriving (Foldable, Functor)
 
 data Type a
