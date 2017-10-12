@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable #-}
 module Data.Complexity where
 
 import Control.Arrow ((&&&))
@@ -17,7 +17,7 @@ data Expr a
   | Var Name
   | Lit Bool
   | If a a a
-  deriving (Foldable, Functor)
+  deriving (Foldable, Functor, Traversable)
 
 data Type a
   = TVar Name
