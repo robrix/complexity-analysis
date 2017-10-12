@@ -33,6 +33,11 @@ data Expr a
 makeAbs :: Name -> Term Expr -> Term Expr
 makeAbs name body = In (Abs name body)
 
+lam :: (Term Expr -> Term Expr) -> Term Expr
+lam hoas = makeAbs n body
+  where n = maybe (Name 0) succ (maxBoundVariable body)
+        body = hoas (var n)
+
 maxBoundVariable :: Term Expr -> Maybe Name
 maxBoundVariable = cata $ \ expr -> case expr of
   Abs name _ -> Just name
