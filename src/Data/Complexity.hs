@@ -33,6 +33,10 @@ newtype Term f = In { out :: f (Term f) }
 
 data Attr f a = Attr { attribute :: a, hole :: f (Attr f a) }
 
+data CoAttr f a
+  = Stop a
+  | Continue (f (CoAttr f a))
+
 
 type Env a = [(Name, a)]
 type Result = Either String
