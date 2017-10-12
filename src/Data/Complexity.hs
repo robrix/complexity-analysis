@@ -33,6 +33,11 @@ data Expr a
 abs :: Name -> Term Expr -> Term Expr
 abs name body = In (Abs name body)
 
+maxBoundVariable :: Term Expr -> Maybe Name
+maxBoundVariable = cata $ \ expr -> case expr of
+  Abs name _ -> Just name
+  _          -> foldr max Nothing expr
+
 (#) :: Term Expr -> Term Expr -> Term Expr
 func # arg = In (App func arg)
 
