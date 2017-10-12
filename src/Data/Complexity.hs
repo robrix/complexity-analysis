@@ -5,7 +5,9 @@ import Control.Arrow ((&&&))
 import Control.Monad ((<=<))
 import Control.Monad.Reader
 import Data.Bifunctor (first)
+import Data.Foldable (fold)
 import Data.Functor.Identity
+import qualified Data.Set as Set
 
 newtype Name = Name String
   deriving (Eq, Ord, Read, Show)
@@ -34,6 +36,12 @@ data Type a
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
 infixr 0 :->
+
+freeTypeVariables :: Term Type -> Set.Set TName
+freeTypeVariables = cata $ \ ty -> case ty of
+  TVar name -> Set.singleton name
+  ForAll name body -> Set.delete name body
+  _ -> fold ty
 
 
 newtype Term f = In { out :: f (Term f) }
