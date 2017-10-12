@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances, FunctionalDependencies, GeneralizedNewtypeDeriving, MultiParamTypeClasses, UndecidableInstances #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances, FunctionalDependencies, GeneralizedNewtypeDeriving, MultiParamTypeClasses, StandaloneDeriving, UndecidableInstances #-}
 module Data.Complexity where
 
 import Control.Arrow ((&&&))
@@ -38,11 +38,26 @@ infixr 0 :->
 
 newtype Term f = In { out :: f (Term f) }
 
+deriving instance Eq (f (Term f)) => Eq (Term f)
+deriving instance Ord (f (Term f)) => Ord (Term f)
+deriving instance Read (f (Term f)) => Read (Term f)
+deriving instance Show (f (Term f)) => Show (Term f)
+
 data Attr f a = Attr { attr :: a, hole :: f (Attr f a) }
+
+deriving instance (Eq (f (Attr f a)), Eq a) => Eq (Attr f a)
+deriving instance (Ord (f (Attr f a)), Ord a) => Ord (Attr f a)
+deriving instance (Read (f (Attr f a)), Read a) => Read (Attr f a)
+deriving instance (Show (f (Attr f a)), Show a) => Show (Attr f a)
 
 data CoAttr f a
   = Stop a
   | Continue (f (CoAttr f a))
+
+deriving instance (Eq (f (CoAttr f a)), Eq a) => Eq (CoAttr f a)
+deriving instance (Ord (f (CoAttr f a)), Ord a) => Ord (CoAttr f a)
+deriving instance (Read (f (CoAttr f a)), Read a) => Read (CoAttr f a)
+deriving instance (Show (f (CoAttr f a)), Show a) => Show (CoAttr f a)
 
 
 newtype Env a = Env { getEnv :: [(Name, a)] }
