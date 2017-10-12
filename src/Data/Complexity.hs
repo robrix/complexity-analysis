@@ -2,6 +2,7 @@
 module Data.Complexity where
 
 import Control.Arrow ((&&&))
+import Data.Function (fix)
 
 newtype Name = Name String
   deriving (Eq, Ord, Read, Show)
@@ -29,9 +30,15 @@ data Attr f a = Attr { attribute :: a, hole :: f (Attr f a) }
 
 type FAlgebra f a = f a -> a
 type RAlgebra f a = f (Term f, a) -> a
+type CVAlgebra f a = f (Attr f a) -> a
 
 cata :: Functor f => FAlgebra f a -> Term f -> a
 cata algebra = go where go = algebra . fmap go . out
 
 para :: Functor f => RAlgebra f a -> Term f -> a
 para algebra = go where go = algebra . fmap (id &&& go) . out
+
+histo :: Functor f => CVAlgebra f a -> Term f -> a
+histo algebra = go
+  where go = algebra . fmap worker . out
+        worker t = Attr (go t) (worker <$> out t)
