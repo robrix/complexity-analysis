@@ -2,7 +2,6 @@
 module Data.Complexity where
 
 import Control.Arrow ((&&&))
-import Data.Function (fix)
 
 newtype Name = Name String
   deriving (Eq, Ord, Read, Show)
