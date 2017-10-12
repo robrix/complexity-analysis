@@ -10,6 +10,7 @@ import Data.Function (on)
 import Data.Functor.Foldable (Recursive(..), Base)
 import Data.Functor.Identity
 import qualified Data.List as List
+import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 
 newtype Name = Name String
@@ -116,6 +117,14 @@ substCompose s1 s2 = Subst (List.unionBy ((==) `on` fst) (map (second (substitut
 
 class Eq name => Binder name value where
   substitute :: Subst name value -> value -> value
+
+instance Binder TName (CoAttr Type Error) where
+  substitute = flip (cata (\ ty s -> case ty of
+    ContinueF (TVar name)        -> fromMaybe (Continue (TVar name)) (substLookup name s)
+    ContinueF (ForAll name body) -> Continue (ForAll name (body (substDelete name s)))
+    ContinueF other              -> Continue (($ s) <$> other)
+    StopF err                    -> Stop err))
+
 
 type Error = String
 
