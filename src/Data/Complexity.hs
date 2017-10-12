@@ -67,6 +67,8 @@ data AttrF f a b = AttrF { attrF :: a, holeF :: f b }
 
 type instance Base (Attr f a) = AttrF f a
 
+instance Functor f => Recursive (Attr f a) where project (Attr a f) = AttrF a f
+
 deriving instance (Eq (f (Attr f a)), Eq a) => Eq (Attr f a)
 deriving instance (Ord (f (Attr f a)), Ord a) => Ord (Attr f a)
 deriving instance (Read (f (Attr f a)), Read a) => Read (Attr f a)
