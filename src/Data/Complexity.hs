@@ -66,6 +66,17 @@ data CoAttr f a
   = Stop a
   | Continue (f (CoAttr f a))
 
+data CoAttrF f a b
+  = StopF a
+  | ContinueF (f b)
+  deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
+
+type instance Base (CoAttr f a) = CoAttrF f a
+
+instance Functor f => Recursive (CoAttr f a) where
+  project (Stop a)     = StopF a
+  project (Continue f) = ContinueF f
+
 deriving instance (Eq (f (CoAttr f a)), Eq a) => Eq (CoAttr f a)
 deriving instance (Ord (f (CoAttr f a)), Ord a) => Ord (CoAttr f a)
 deriving instance (Read (f (CoAttr f a)), Read a) => Read (CoAttr f a)
