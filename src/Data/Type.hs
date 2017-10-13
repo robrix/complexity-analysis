@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Data.Type where
 
 import Control.Monad.Free
@@ -61,6 +61,6 @@ substType subst (arg :-> ret)      = Left (substitute subst arg :-> substitute s
 substType _     Bool               = Left Bool
 substType subst (fst :* snd)       = Left (substitute subst fst :* substitute subst snd)
 
-instance Binder (PartialType a) (PartialType a) where
+instance Binder (PartialType a) a => Binder (PartialType a) (PartialType a) where
   substitute subst (Free t) = either wrap id (substType subst t)
-  substitute _     (Pure a) = Pure a
+  substitute subst (Pure a) = Pure (substitute subst a)
