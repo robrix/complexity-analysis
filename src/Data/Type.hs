@@ -19,6 +19,26 @@ data Type a
 infixr 0 :->
 infixl 7 :*
 
+tvar :: Name -> Free Type a
+tvar name = wrap (TVar name)
+
+makeForAll :: Name -> Free Type a -> Free Type a
+makeForAll name body = wrap (ForAll name body)
+
+(.->) :: Free Type a -> Free Type a -> Free Type a
+arg .-> ret = wrap (arg :-> ret)
+
+infixr 0 .->
+
+(.*) :: Free Type a -> Free Type a -> Free Type a
+fst .* snd = wrap (fst :* snd)
+
+infixl 7 .*
+
+bool :: Free Type a
+bool = wrap Bool
+
+
 freeTypeVariables :: Free Type a -> Set.Set Name
 freeTypeVariables = iter (\ ty -> case ty of
   TVar name        -> Set.singleton name

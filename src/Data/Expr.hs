@@ -36,8 +36,8 @@ infixl 9 #
 var :: Name -> Fix Expr
 var name = Fix (Var name)
 
-bool :: Bool -> Fix Expr
-bool b = Fix (Lit b)
+lit :: Bool -> Fix Expr
+lit b = Fix (Lit b)
 
 iff :: Fix Expr -> Fix Expr -> Fix Expr -> Fix Expr
 iff c t e = Fix (If c t e)
