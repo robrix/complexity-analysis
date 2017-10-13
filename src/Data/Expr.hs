@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable #-}
 module Data.Expr where
 
+import Data.Functor.Classes.Generic
 import Data.Functor.Foldable (Recursive(..), Fix(..))
 import Data.Name
 import GHC.Generics
@@ -15,6 +16,10 @@ data Expr a
   | Fst a
   | Snd a
   deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
+
+instance Eq1 Expr where liftEq = genericLiftEq
+instance Ord1 Expr where liftCompare = genericLiftCompare
+instance Show1 Expr where liftShowsPrec = genericLiftShowsPrec
 
 type Term = Fix Expr
 
