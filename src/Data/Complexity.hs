@@ -10,7 +10,6 @@ import Control.Monad.Fresh
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Bifunctor (second)
-import Data.Foldable (fold)
 import Data.Function (on)
 import Data.Functor.Foldable (Recursive(..), Fix(..))
 import qualified Data.List as List
@@ -18,6 +17,7 @@ import Data.Maybe (fromMaybe)
 import Data.Name
 import Data.Semigroup (Semigroup(..))
 import qualified Data.Set as Set
+import Data.Type
 
 data Complexity i
   = Constant i
@@ -70,39 +70,6 @@ pfst pair = Fix (Fst pair)
 
 psnd :: Fix Expr -> Fix Expr
 psnd pair = Fix (Snd pair)
-
-
-data Type a
-  = TVar Name
-  | ForAll Name a
-  | a :-> a
-  | Bool
-  | a :* a
-  deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
-
-infixr 0 :->
-infixl 7 :*
-
-freeTypeVariables :: Free Type a -> Set.Set Name
-freeTypeVariables = cata $ \ ty -> case ty of
-  F.Free (TVar name)        -> Set.singleton name
-  F.Free (ForAll name body) -> Set.delete name body
-  _                         -> fold ty
-
-returnType :: Free Type a -> Maybe (Free Type a)
-returnType (Free (_ :-> returnTy)) = Just returnTy
-returnType (Pure err)              = Just (Pure err)
-returnType _                       = Nothing
-
-fstType :: Free Type a -> Maybe (Free Type a)
-fstType (Free (fstTy :* _)) = Just fstTy
-fstType (Pure err)          = Just (Pure err)
-fstType _                   = Nothing
-
-sndType :: Free Type a -> Maybe (Free Type a)
-sndType (Free (_ :* sndTy)) = Just sndTy
-sndType (Pure err)          = Just (Pure err)
-sndType _                   = Nothing
 
 
 newtype Env a = Env { getEnv :: [(Name, a)] }
