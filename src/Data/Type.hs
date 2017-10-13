@@ -53,6 +53,9 @@ instance FreeTypeVariables t => FreeTypeVariables (Type t) where
   freeTypeVariables (ForAll name body) = Set.delete name (freeTypeVariables body)
   freeTypeVariables ty                 = foldMap freeTypeVariables ty
 
+instance FreeTypeVariables (Set.Set Name) where
+  freeTypeVariables = id
+
 returnType :: Free Type a -> Maybe (Free Type a)
 returnType (Free (_ :-> returnTy)) = Just returnTy
 returnType (Pure err)              = Just (Pure err)
