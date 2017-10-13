@@ -7,6 +7,7 @@ import Control.Monad.Free
 import Control.Monad.Fresh
 import Control.Monad.Reader
 import Control.Monad.State
+import Data.Either (fromLeft)
 import Data.Env
 import Data.Expr
 import Data.Functor.Foldable (Recursive(..), Fix(..))
@@ -30,6 +31,11 @@ runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT
 
 substElaborated :: ElabTerm -> Subst (PartialType Error) -> ElabTerm
 substElaborated = cata (\ (ty F.:< expr) subst -> substitute subst ty :< (($ subst) <$> expr))
+
+substError :: Subst (PartialType Error) -> Error -> Error
+substError _     (FreeVariable name)    = FreeVariable name
+substError subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
+substError subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
 
 
 elaborate :: Term -> Elab ElabTerm
