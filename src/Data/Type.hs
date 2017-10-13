@@ -56,21 +56,6 @@ instance FreeTypeVariables t => FreeTypeVariables (Type t) where
 instance FreeTypeVariables (Set.Set Name) where
   freeTypeVariables = id
 
-returnType :: PartialType a -> Maybe (PartialType a)
-returnType (Free (_ :-> returnTy)) = Just returnTy
-returnType (Pure err)              = Just (Pure err)
-returnType _                       = Nothing
-
-fstType :: PartialType a -> Maybe (PartialType a)
-fstType (Free (fstTy :* _)) = Just fstTy
-fstType (Pure err)          = Just (Pure err)
-fstType _                   = Nothing
-
-sndType :: PartialType a -> Maybe (PartialType a)
-sndType (Free (_ :* sndTy)) = Just sndTy
-sndType (Pure err)          = Just (Pure err)
-sndType _                   = Nothing
-
 
 instance Binder (PartialType a) where
   substitute subst ty = iter (\ ty subst -> case ty of
