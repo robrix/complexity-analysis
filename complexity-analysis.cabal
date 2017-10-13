@@ -18,6 +18,7 @@ library
                      , Data.Expr
                      , Data.Interval
                      , Data.Name
+                     , Data.Subst
                      , Data.Type
   build-depends:       base >=4.10 && <4.11
                      , comonad
