@@ -22,7 +22,7 @@ data Error
   | InfiniteType Name (Type (PartialType Error))
   deriving (Eq, Ord, Read, Show)
 
-type Elab = StateT (Subst (PartialType Error)) (ReaderT (Env TotalType) (Fresh Name))
+type Elab = StateT (Subst (PartialType Error)) (ReaderT (Env Name) (Fresh Name))
 
 type ElabTerm = Cofree Expr (PartialType Error)
 
@@ -36,7 +36,7 @@ substElaborated = cata (\ (ty F.:< expr) subst -> substitute subst ty :< (($ su
 elaborate :: Term -> Elab ElabTerm
 elaborate (Fix (Abs n b)) = do
   t <- fresh
-  b' <- local (envExtend n (Fix (TVar t))) (elaborate b)
+  b' <- local (envExtend n t) (elaborate b)
   pure ((tvar t .-> extract b') :< Abs n b')
 elaborate (Fix (App f a)) = do
   t <- fresh
@@ -46,7 +46,7 @@ elaborate (Fix (App f a)) = do
   pure (fromMaybe (tvar t) (returnType fTy) :< App f' a')
 elaborate (Fix (Var name)) = do
   env <- ask
-  pure (maybe (Pure (FreeVariable name)) (cata wrap) (envLookup name env) :< Var name)
+  pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env) :< Var name)
 elaborate (Fix (Lit b)) = pure (bool :< Lit b)
 elaborate (Fix (If c t e)) = do
   c' <- check c bool
