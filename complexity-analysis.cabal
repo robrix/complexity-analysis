@@ -16,7 +16,9 @@ library
                      , Data.Complexity
                      , Data.Interval
   build-depends:       base >=4.10 && <4.11
+                     , comonad
                      , containers
+                     , free
                      , mtl
                      , recursion-schemes
   hs-source-dirs:      src
