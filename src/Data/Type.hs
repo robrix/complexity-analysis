@@ -1,12 +1,14 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances #-}
 module Data.Type where
 
 import Control.Monad.Free
 import qualified Control.Monad.Trans.Free as F
 import Data.Foldable (fold)
 import Data.Functor.Foldable (Recursive(..))
+import Data.Maybe (fromMaybe)
 import Data.Name
 import qualified Data.Set as Set
+import Data.Subst
 
 data Type a
   = TVar Name
@@ -39,3 +41,11 @@ sndType :: Free Type a -> Maybe (Free Type a)
 sndType (Free (_ :* sndTy)) = Just sndTy
 sndType (Pure err)          = Just (Pure err)
 sndType _                   = Nothing
+
+
+instance Binder (Free Type a) where
+  substitute = flip (cata (\ ty subst -> case ty of
+    F.Free (TVar name)        -> fromMaybe (Free (TVar name)) (substLookup name subst)
+    F.Free (ForAll name body) -> Free (ForAll name (body (substDelete name subst)))
+    F.Free other              -> Free (($ subst) <$> other)
+    F.Pure err                -> Pure err))

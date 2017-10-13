@@ -5,7 +5,6 @@ import Control.Comonad (extract)
 import Control.Comonad.Cofree
 import qualified Control.Comonad.Trans.Cofree as F
 import Control.Monad.Free
-import qualified Control.Monad.Trans.Free as F
 import Control.Monad.Fresh
 import Control.Monad.Reader
 import Control.Monad.State
@@ -21,14 +20,6 @@ import Data.Type
 data Complexity i
   = Constant i
   deriving (Eq, Ord, Read, Show)
-
-
-instance Binder (Free Type Error) where
-  substitute = flip (cata (\ ty subst -> case ty of
-    F.Free (TVar name)        -> fromMaybe (Free (TVar name)) (substLookup name subst)
-    F.Free (ForAll name body) -> Free (ForAll name (body (substDelete name subst)))
-    F.Free other              -> Free (($ subst) <$> other)
-    F.Pure err                -> Pure err))
 
 
 data Error
