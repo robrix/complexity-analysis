@@ -69,10 +69,10 @@ elaborate (Fix (Snd pair)) = do
   pairTy <- unify (extract pair') (tvar t1 .* tvar t2)
   pure (fromMaybe (tvar t2) (sndType pairTy) :< Snd pair')
 
-check :: Fix Expr -> Fix Type -> Elab (Cofree Expr (Free Type Error))
+check :: Fix Expr -> Free Type Error -> Elab (Cofree Expr (Free Type Error))
 check term ty = do
   term' <- elaborate term
-  termTy <- unify (extract term') (cata wrap ty)
+  termTy <- unify (extract term') ty
   pure (termTy :< unwrap term')
 
 
