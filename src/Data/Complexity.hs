@@ -163,7 +163,11 @@ instance Binder (CoAttr Type Error) where
     StopF err                    -> Stop err))
 
 
-type Error = String
+data Error
+  = FreeVariable Name
+  | TypeMismatch (Type (CoAttr Type Error)) (Type (CoAttr Type Error))
+  | InfiniteType Name (CoAttr Type Error)
+  deriving (Eq, Ord, Read, Show)
 
 type Elab = StateT (Subst (CoAttr Type Error)) (ReaderT (Env (Term Type)) (Fresh Name))
 
@@ -187,9 +191,9 @@ elaborate (In (App f a)) = do
   case fTy of
     Continue (_ :-> returnTy) -> pure (Attr returnTy            (App f' a'))
     _                         -> pure (Attr (Continue (TVar t)) (App f' a'))
-elaborate (In (Var n)) = do
+elaborate (In (Var name)) = do
   env <- ask
-  pure (Attr (maybe (Stop ("undefined variable: " ++ show n)) (cata Continue) (envLookup n env)) (Var n))
+  pure (Attr (maybe (Stop (FreeVariable name)) (cata Continue) (envLookup name env)) (Var name))
 elaborate (In (Lit b)) = pure (Attr (Continue Bool) (Lit b))
 elaborate (In (If c t e)) = do
   c' <- elaborate c
@@ -208,11 +212,11 @@ unify (Continue t1) (Continue t2)
     (a1 :-> b1,  a2 :-> b2)  -> (Continue .) . (:->) <$> unify a1 a2 <*> unify b1 b2
     (TVar name1, _)          -> bind name1 (Continue t2)
     (_,          TVar name2) -> bind name2 (Continue t1)
-    (t1,         t2)         -> pure (Stop ("Cannot unify incompatible types " ++ show t1 ++ " and " ++ show t2))
+    (t1,         t2)         -> pure (Stop (TypeMismatch t1 t2))
 
 bind :: Name -> CoAttr Type Error -> Elab (CoAttr Type Error)
 bind name ty
-  | Set.member name (freeTypeVariables ty) = pure (Stop ("Cannot construct the infinite type " ++ show name ++ " = " ++ show ty))
+  | Set.member name (freeTypeVariables ty) = pure (Stop (InfiniteType name ty))
   | otherwise                              = modify (substExtend name ty) >> pure ty
 
 
