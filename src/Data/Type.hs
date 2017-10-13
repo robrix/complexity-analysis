@@ -2,7 +2,6 @@
 module Data.Type where
 
 import Control.Monad.Free
-import Data.Maybe (fromMaybe)
 import Data.Name
 import qualified Data.Set as Set
 import Data.Subst
@@ -63,7 +62,5 @@ substType _     Bool               = Left Bool
 substType subst (fst :* snd)       = Left (substitute subst fst :* substitute subst snd)
 
 instance Binder (PartialType a) (PartialType a) where
-  substitute subst ty = iter (\ ty subst -> case ty of
-    TVar name        -> fromMaybe (Free (TVar name)) (substLookup name subst)
-    ForAll name body -> Free (ForAll name (body (substDelete name subst)))
-    other            -> Free (($ subst) <$> other)) (const . Pure <$> ty) subst
+  substitute subst (Free t) = either wrap id (substType subst t)
+  substitute _     (Pure a) = Pure a
