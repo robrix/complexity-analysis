@@ -2,9 +2,7 @@
 module Data.Type where
 
 import Control.Monad.Free
-import qualified Control.Monad.Trans.Free as F
 import Data.Foldable (fold)
-import Data.Functor.Foldable (Recursive(..))
 import Data.Maybe (fromMaybe)
 import Data.Name
 import qualified Data.Set as Set
@@ -22,10 +20,10 @@ infixr 0 :->
 infixl 7 :*
 
 freeTypeVariables :: Free Type a -> Set.Set Name
-freeTypeVariables = cata $ \ ty -> case ty of
-  F.Free (TVar name)        -> Set.singleton name
-  F.Free (ForAll name body) -> Set.delete name body
-  _                         -> fold ty
+freeTypeVariables = iter (\ ty -> case ty of
+  TVar name        -> Set.singleton name
+  ForAll name body -> Set.delete name body
+  _                -> fold ty) . (Set.empty <$)
 
 returnType :: Free Type a -> Maybe (Free Type a)
 returnType (Free (_ :-> returnTy)) = Just returnTy
@@ -44,8 +42,7 @@ sndType _                   = Nothing
 
 
 instance Binder (Free Type a) where
-  substitute = flip (cata (\ ty subst -> case ty of
-    F.Free (TVar name)        -> fromMaybe (Free (TVar name)) (substLookup name subst)
-    F.Free (ForAll name body) -> Free (ForAll name (body (substDelete name subst)))
-    F.Free other              -> Free (($ subst) <$> other)
-    F.Pure err                -> Pure err))
+  substitute subst ty = iter (\ ty subst -> case ty of
+    TVar name        -> fromMaybe (Free (TVar name)) (substLookup name subst)
+    ForAll name body -> Free (ForAll name (body (substDelete name subst)))
+    other            -> Free (($ subst) <$> other)) (const . Pure <$> ty) subst
