@@ -19,7 +19,7 @@ import Data.Type
 data Error
   = FreeVariable Name
   | TypeMismatch (Type (Free Type Error)) (Type (Free Type Error))
-  | InfiniteType Name (Free Type Error)
+  | InfiniteType Name (Type (Free Type Error))
   deriving (Eq, Ord, Read, Show)
 
 type Elab = StateT (Subst (Free Type Error)) (ReaderT (Env (Fix Type)) (Fresh Name))
@@ -80,15 +80,15 @@ unify :: Free Type Error -> Free Type Error -> Elab (Free Type Error)
 unify (Pure e1) _         = pure (Pure e1)
 unify _         (Pure e2) = pure (Pure e2)
 unify (Free t1) (Free t2)
-  | TVar name1 <- t1                   = bind name1 (wrap t2)
-  |                   TVar name2 <- t2 = bind name2 (wrap t1)
+  | TVar name1 <- t1                   = bind name1 t2
+  |                   TVar name2 <- t2 = bind name2 t1
   | a1 :-> b1  <- t1, a2 :-> b2  <- t2 = (.->) <$> unify a1 a2 <*> unify b1 b2
   | a1 :*  b1  <- t1, a2 :*  b2  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
   | Bool       <- t1, Bool       <- t2 = pure bool
   | otherwise = pure (Pure (TypeMismatch t1 t2))
 
-bind :: Name -> Free Type Error -> Elab (Free Type Error)
+bind :: Name -> Type (Free Type Error) -> Elab (Free Type Error)
 bind name ty
-  | Free (TVar name') <- ty, name == name' = pure ty
+  | TVar name' <- ty, name == name'        = pure (wrap ty)
   | Set.member name (freeTypeVariables ty) = pure (Pure (InfiniteType name ty))
-  | otherwise                              = modify (substExtend name ty) >> pure ty
+  | otherwise                              = modify (substExtend name (wrap ty)) >> pure (wrap ty)
