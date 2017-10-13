@@ -1,11 +1,11 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, GeneralizedNewtypeDeriving #-}
 module Data.Env where
 
 import Data.Name
 import Data.Semigroup
 
 newtype Env a = Env { getEnv :: [(Name, a)] }
-  deriving (Eq, Monoid, Ord, Read, Semigroup, Show)
+  deriving (Eq, Foldable, Functor, Monoid, Ord, Read, Semigroup, Show, Traversable)
 
 envLookup :: Name -> Env a -> Maybe a
 envLookup name = lookup name . getEnv
