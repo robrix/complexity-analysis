@@ -21,9 +21,7 @@ library
                      , Data.Name
                      , Data.Subst
                      , Data.Type
-  other-modules:       Data.Functor.Classes.Eq.Generic
-                     , Data.Functor.Classes.Ord.Generic
-                     , Data.Functor.Classes.Show.Generic
+  other-modules:       Data.Functor.Classes.Generic
   build-depends:       base >=4.10 && <4.11
                      , comonad
                      , containers
