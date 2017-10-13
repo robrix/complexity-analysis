@@ -55,6 +55,13 @@ instance FreeTypeVariables (Set.Set Name) where
   freeTypeVariables = id
 
 
+substType :: Binder a a => Subst a -> Type a -> Either (Type a) a
+substType subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup name subst)
+substType subst (ForAll name body) = Left (ForAll name (substitute (substDelete name subst) body))
+substType subst (arg :-> ret)      = Left (substitute subst arg :-> substitute subst ret)
+substType _     Bool               = Left Bool
+substType subst (fst :* snd)       = Left (substitute subst fst :* substitute subst snd)
+
 instance Binder (PartialType a) (PartialType a) where
   substitute subst ty = iter (\ ty subst -> case ty of
     TVar name        -> fromMaybe (Free (TVar name)) (substLookup name subst)
