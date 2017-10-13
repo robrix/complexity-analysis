@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
 module Analysis.Elaboration where
 
 import Control.Comonad (extract)
@@ -32,10 +33,10 @@ runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT
 substElaborated :: ElabTerm -> Subst (PartialType Error) -> ElabTerm
 substElaborated = cata (\ (ty F.:< expr) subst -> substitute subst ty :< (($ subst) <$> expr))
 
-substError :: Subst (PartialType Error) -> Error -> Error
-substError _     (FreeVariable name)    = FreeVariable name
-substError subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
-substError subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
+instance Binder (PartialType Error) Error where
+  substitute _     (FreeVariable name)    = FreeVariable name
+  substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
+  substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
 
 
 elaborate :: Term -> Elab ElabTerm
