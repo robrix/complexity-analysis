@@ -38,6 +38,9 @@ instance Binder (PartialType Error) Error where
   substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
   substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
 
+instance Binder (PartialType Error) ElabTerm where
+  substitute subst (a :< f) = substitute subst a :< fmap (substitute subst) f
+
 
 elaborate :: Term -> Elab ElabTerm
 elaborate (Fix (Abs n b)) = do
