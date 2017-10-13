@@ -22,7 +22,7 @@ data Error
   | InfiniteType Name (Type (PartialType Error))
   deriving (Eq, Ord, Read, Show)
 
-type Elab = StateT (Subst (PartialType Error)) (ReaderT (Env (Fix Type)) (Fresh Name))
+type Elab = StateT (Subst (PartialType Error)) (ReaderT (Env TotalType) (Fresh Name))
 
 type ElabTerm = Cofree Expr (PartialType Error)
 

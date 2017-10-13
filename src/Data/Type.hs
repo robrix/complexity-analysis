@@ -2,6 +2,7 @@
 module Data.Type where
 
 import Control.Monad.Free
+import Data.Functor.Foldable (Fix)
 import Data.Maybe (fromMaybe)
 import Data.Name
 import qualified Data.Set as Set
@@ -16,6 +17,7 @@ data Type a
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
 type PartialType = Free Type
+type TotalType = Fix Type
 
 infixr 0 :->
 infixl 7 :*
