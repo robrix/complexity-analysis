@@ -10,7 +10,6 @@ import Control.Monad.State
 import Data.Env
 import Data.Expr
 import Data.Functor.Foldable (Recursive(..), Fix(..))
-import Data.Maybe (fromMaybe)
 import Data.Name
 import qualified Data.Set as Set
 import Data.Subst
@@ -40,10 +39,9 @@ elaborate (Fix (Abs n b)) = do
   pure ((tvar t .-> extract b') :< Abs n b')
 elaborate (Fix (App f a)) = do
   t <- fresh
-  f' <- elaborate f
   a' <- elaborate a
-  fTy <- unify (extract f') (extract a' .-> tvar t)
-  pure (fromMaybe (tvar t) (returnType fTy) :< App f' a')
+  f' <- check f (extract a' .-> tvar t)
+  pure (tvar t :< App f' a')
 elaborate (Fix (Var name)) = do
   env <- ask
   pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env) :< Var name)
