@@ -18,7 +18,7 @@ import Data.Type
 
 data Error
   = FreeVariable Name
-  | TypeMismatch (Free Type Error) (Free Type Error)
+  | TypeMismatch (Type (Free Type Error)) (Type (Free Type Error))
   | InfiniteType Name (Free Type Error)
   deriving (Eq, Ord, Read, Show)
 
@@ -77,13 +77,15 @@ check term ty = do
 
 
 unify :: Free Type Error -> Free Type Error -> Elab (Free Type Error)
-unify t1 t2
-  | Free (TVar name1) <- t1                          = bind name1 t2
-  |                          Free (TVar name2) <- t2 = bind name2 t1
-  | Free (a1 :-> b1)  <- t1, Free (a2 :-> b2)  <- t2 = (.->) <$> unify a1 a2 <*> unify b1 b2
-  | Free (a1 :*  b1)  <- t1, Free (a2 :*  b2)  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
-  | t1 == t2                                         = pure t2
-  | otherwise                                        = pure (Pure (TypeMismatch t1 t2))
+unify (Pure e1) _         = pure (Pure e1)
+unify _         (Pure e2) = pure (Pure e2)
+unify (Free t1) (Free t2)
+  | TVar name1 <- t1                   = bind name1 (wrap t2)
+  |                   TVar name2 <- t2 = bind name2 (wrap t1)
+  | a1 :-> b1  <- t1, a2 :-> b2  <- t2 = (.->) <$> unify a1 a2 <*> unify b1 b2
+  | a1 :*  b1  <- t1, a2 :*  b2  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
+  | Bool       <- t1, Bool       <- t2 = pure bool
+  | otherwise = pure (Pure (TypeMismatch t1 t2))
 
 bind :: Name -> Free Type Error -> Elab (Free Type Error)
 bind name ty
