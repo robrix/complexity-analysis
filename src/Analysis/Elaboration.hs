@@ -71,9 +71,9 @@ elaborate (Fix (Snd pair)) = do
 
 
 unify :: Free Type Error -> Free Type Error -> Elab (Free Type Error)
-unify (Pure err1)   _             = pure (Pure err1)
-unify _             (Pure err2)   = pure (Pure err2)
-unify (Free t1) (Free t2)
+unify (Pure err1) _           = pure (Pure err1)
+unify _           (Pure err2) = pure (Pure err2)
+unify (Free t1)   (Free t2)
   | t1 == t2  = pure (Free t2)
   | otherwise = case (t1, t2) of
     (a1 :-> b1,  a2 :-> b2)  -> (.->) <$> unify a1 a2 <*> unify b1 b2
