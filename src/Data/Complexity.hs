@@ -153,7 +153,7 @@ instance Binder (Free Type Error) where
 data Error
   = FreeVariable Name
   | TypeMismatch (Type (Free Type Error)) (Type (Free Type Error))
-  | FixfiniteType Name (Free Type Error)
+  | InfiniteType Name (Free Type Error)
   deriving (Eq, Ord, Read, Show)
 
 type Elab = StateT (Subst (Free Type Error)) (ReaderT (Env (Fix Type)) (Fresh Name))
@@ -217,5 +217,5 @@ unify (Free t1) (Free t2)
 
 bind :: Name -> Free Type Error -> Elab (Free Type Error)
 bind name ty
-  | Set.member name (freeTypeVariables ty) = pure (Pure (FixfiniteType name ty))
+  | Set.member name (freeTypeVariables ty) = pure (Pure (InfiniteType name ty))
   | otherwise                              = modify (substExtend name ty) >> pure ty
