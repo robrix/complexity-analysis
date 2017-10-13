@@ -29,6 +29,8 @@ data Expr a
   | Lit Bool
   | If a a a
   | Pair a a
+  | Fst a
+  | Snd a
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
 makeAbs :: Name -> Term Expr -> Term Expr
@@ -61,6 +63,12 @@ iff c t e = In (If c t e)
 pair :: Term Expr -> Term Expr -> Term Expr
 pair fst snd = In (Pair fst snd)
 
+pfst :: Term Expr -> Term Expr
+pfst pair = In (Fst pair)
+
+psnd :: Term Expr -> Term Expr
+psnd pair = In (Snd pair)
+
 
 data Type a
   = TVar Name
@@ -83,6 +91,16 @@ returnType :: CoAttr Type a -> Maybe (CoAttr Type a)
 returnType (Continue (_ :-> returnTy)) = Just returnTy
 returnType (Stop err)                  = Just (Stop err)
 returnType _                           = Nothing
+
+fstType :: CoAttr Type a -> Maybe (CoAttr Type a)
+fstType (Continue (fstTy :* _)) = Just fstTy
+fstType (Stop err)              = Just (Stop err)
+fstType _                       = Nothing
+
+sndType :: CoAttr Type a -> Maybe (CoAttr Type a)
+sndType (Continue (_ :* sndTy)) = Just sndTy
+sndType (Stop err)              = Just (Stop err)
+sndType _                       = Nothing
 
 
 newtype Term f = In { out :: f (Term f) }
@@ -214,6 +232,18 @@ elaborate (In (Pair fst snd)) = do
   fst' <- elaborate fst
   snd' <- elaborate snd
   pure (Attr (Continue (attr fst' :* attr snd')) (Pair fst' snd'))
+elaborate (In (Fst pair)) = do
+  t1 <- fresh
+  t2 <- fresh
+  pair' <- elaborate pair
+  pairTy <- unify (attr pair') (Continue (Continue (TVar t1) :* Continue (TVar t2)))
+  pure (Attr (fromMaybe (Continue (TVar t1)) (fstType pairTy)) (Fst pair'))
+elaborate (In (Snd pair)) = do
+  t1 <- fresh
+  t2 <- fresh
+  pair' <- elaborate pair
+  pairTy <- unify (attr pair') (Continue (Continue (TVar t1) :* Continue (TVar t2)))
+  pure (Attr (fromMaybe (Continue (TVar t2)) (sndType pairTy)) (Fst pair'))
 
 
 unify :: CoAttr Type Error -> CoAttr Type Error -> Elab (CoAttr Type Error)
