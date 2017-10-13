@@ -2,7 +2,6 @@
 module Data.Type where
 
 import Control.Monad.Free
-import Data.Foldable (fold)
 import Data.Maybe (fromMaybe)
 import Data.Name
 import qualified Data.Set as Set
@@ -43,10 +42,7 @@ class FreeTypeVariables t where
   freeTypeVariables :: t -> Set.Set Name
 
 instance FreeTypeVariables (Free Type a) where
-  freeTypeVariables = iter (\ ty -> case ty of
-    TVar name        -> Set.singleton name
-    ForAll name body -> Set.delete name body
-    _                -> fold ty) . (Set.empty <$)
+  freeTypeVariables = iter freeTypeVariables . (Set.empty <$)
 
 instance FreeTypeVariables t => FreeTypeVariables (Type t) where
   freeTypeVariables (TVar name)        = Set.singleton name
