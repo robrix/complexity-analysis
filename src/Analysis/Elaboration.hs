@@ -24,14 +24,16 @@ data Error
 
 type Elab = StateT (Subst (Free Type Error)) (ReaderT (Env (Fix Type)) (Fresh Name))
 
+type ElabTerm = Cofree Expr (Free Type Error)
+
 runElab :: Elab a -> (a, Subst (Free Type Error))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-substElaborated :: Cofree Expr (Free Type Error) -> Subst (Free Type Error) -> Cofree Expr (Free Type Error)
+substElaborated :: ElabTerm -> Subst (Free Type Error) -> ElabTerm
 substElaborated = cata (\ (ty F.:< expr) subst -> substitute subst ty :< (($ subst) <$> expr))
 
 
-elaborate :: Term -> Elab (Cofree Expr (Free Type Error))
+elaborate :: Term -> Elab ElabTerm
 elaborate (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (envExtend n (Fix (TVar t))) (elaborate b)
