@@ -15,11 +15,9 @@ import Data.Function (on)
 import Data.Functor.Foldable (Recursive(..), Fix(..))
 import qualified Data.List as List
 import Data.Maybe (fromMaybe)
+import Data.Name
 import Data.Semigroup (Semigroup(..))
 import qualified Data.Set as Set
-
-newtype Name = Name Int
-  deriving (Enum, Eq, Ord, Read, Show)
 
 data Complexity i
   = Constant i
