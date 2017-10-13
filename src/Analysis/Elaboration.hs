@@ -25,12 +25,12 @@ data Error
 
 type Elab = StateT (Subst (PartialType Error)) (ReaderT (Env Name) (Fresh Name))
 
-type ElabTerm = Cofree Expr (PartialType Error)
+type PartialElabTerm = Cofree Expr (PartialType Error)
 
 runElab :: Elab a -> (a, Subst (PartialType Error))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-substElaborated :: ElabTerm -> Subst (PartialType Error) -> ElabTerm
+substElaborated :: PartialElabTerm -> Subst (PartialType Error) -> PartialElabTerm
 substElaborated = cata (\ (ty F.:< expr) subst -> substitute subst ty :< (($ subst) <$> expr))
 
 instance Binder (PartialType Error) Error where
@@ -38,11 +38,11 @@ instance Binder (PartialType Error) Error where
   substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
   substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
 
-instance Binder (PartialType Error) ElabTerm where
+instance Binder (PartialType Error) PartialElabTerm where
   substitute subst (a :< f) = substitute subst a :< fmap (substitute subst) f
 
 
-elaborate :: Term -> Elab ElabTerm
+elaborate :: Term -> Elab PartialElabTerm
 elaborate (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (envExtend n t) (elaborate b)
