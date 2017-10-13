@@ -44,7 +44,7 @@ elaborate (Fix (App f a)) = do
   pure (fromMaybe (tvar t) (returnType fTy) :< App f' a')
 elaborate (Fix (Var name)) = do
   env <- ask
-  pure (maybe (Pure (FreeVariable name)) (cata Free) (envLookup name env) :< Var name)
+  pure (maybe (Pure (FreeVariable name)) (cata wrap) (envLookup name env) :< Var name)
 elaborate (Fix (Lit b)) = pure (bool :< Lit b)
 elaborate (Fix (If c t e)) = do
   c' <- elaborate c
