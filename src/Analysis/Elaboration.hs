@@ -47,7 +47,7 @@ elaborate (Fix (Var name)) = do
   pure (maybe (Pure (FreeVariable name)) (cata wrap) (envLookup name env) :< Var name)
 elaborate (Fix (Lit b)) = pure (bool :< Lit b)
 elaborate (Fix (If c t e)) = do
-  c' <- elaborate c
+  c' <- check c bool
   t' <- elaborate t
   e' <- elaborate e
   result <- unify (extract t') (extract e')
