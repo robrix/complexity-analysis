@@ -200,7 +200,6 @@ elaborate (In (If c t e)) = do
 
 
 unify :: CoAttr Type Error -> CoAttr Type Error -> Elab (CoAttr Type Error)
-unify (Stop err1)   (Stop err2)   = pure (Stop (err1 ++ err2))
 unify (Stop err1)   _             = pure (Stop err1)
 unify _             (Stop err2)   = pure (Stop err2)
 unify (Continue t1) (Continue t2)
