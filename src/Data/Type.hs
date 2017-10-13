@@ -39,11 +39,14 @@ bool :: Free Type a
 bool = wrap Bool
 
 
-freeTypeVariables :: Free Type a -> Set.Set Name
-freeTypeVariables = iter (\ ty -> case ty of
-  TVar name        -> Set.singleton name
-  ForAll name body -> Set.delete name body
-  _                -> fold ty) . (Set.empty <$)
+class FreeTypeVariables t where
+  freeTypeVariables :: t -> Set.Set Name
+
+instance FreeTypeVariables (Free Type a) where
+  freeTypeVariables = iter (\ ty -> case ty of
+    TVar name        -> Set.singleton name
+    ForAll name body -> Set.delete name body
+    _                -> fold ty) . (Set.empty <$)
 
 returnType :: Free Type a -> Maybe (Free Type a)
 returnType (Free (_ :-> returnTy)) = Just returnTy
