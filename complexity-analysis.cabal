@@ -12,7 +12,8 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Data.Complexity
+  exposed-modules:     Control.Monad.Fresh
+                     , Data.Complexity
                      , Data.Interval
   build-depends:       base >=4.10 && <4.11
                      , containers

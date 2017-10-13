@@ -1,14 +1,13 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances, FunctionalDependencies, GeneralizedNewtypeDeriving, MultiParamTypeClasses, StandaloneDeriving, TypeFamilies, UndecidableInstances #-}
 module Data.Complexity where
 
-import Control.Monad ((<=<))
+import Control.Monad.Fresh
 import Control.Monad.Reader
 import Control.Monad.State
-import Data.Bifunctor (first, second)
+import Data.Bifunctor (second)
 import Data.Foldable (fold)
 import Data.Function (on)
 import Data.Functor.Foldable (Recursive(..), Base)
-import Data.Functor.Identity
 import qualified Data.List as List
 import Data.Maybe (fromMaybe)
 import Data.Semigroup (Semigroup(..))
@@ -201,7 +200,7 @@ data Error
 type Elab = StateT (Subst (CoAttr Type Error)) (ReaderT (Env (Term Type)) (Fresh Name))
 
 runElab :: Elab a -> (a, Subst (CoAttr Type Error))
-runElab = fst . runIdentity . flip runFreshT (Name 0) . flip runReaderT mempty . flip runStateT mempty
+runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
 substElaborated :: Attr Expr (CoAttr Type Error) -> Subst (CoAttr Type Error) -> Attr Expr (CoAttr Type Error)
 substElaborated = cata (\ (AttrF ty expr) subst -> Attr (substitute subst ty) (($ subst) <$> expr))
@@ -261,37 +260,3 @@ bind :: Name -> CoAttr Type Error -> Elab (CoAttr Type Error)
 bind name ty
   | Set.member name (freeTypeVariables ty) = pure (Stop (InfiniteType name ty))
   | otherwise                              = modify (substExtend name ty) >> pure ty
-
-
-class Monad monad => MonadFresh name monad | monad -> name where
-  fresh :: monad name
-
-
-newtype FreshT name monad result = FreshT { runFreshT :: name -> monad (result, name) }
-
-type Fresh name = FreshT name Identity
-
-instance Functor monad => Functor (FreshT name monad) where
-  fmap f (FreshT run) = FreshT (fmap (first f) . run)
-
-instance Monad monad => Applicative (FreshT name monad) where
-  pure = FreshT . (pure .) . (,)
-
-  f <*> a = FreshT (\ s -> do
-    (f', s') <- runFreshT f s
-    (a', s'')<- runFreshT a s'
-    pure (f' a', s''))
-
-instance Monad monad => Monad (FreshT name monad) where
-  return = pure
-
-  a >>= f = FreshT (uncurry runFreshT . first f <=< runFreshT a)
-
-instance (Enum name, Monad monad) => MonadFresh name (FreshT name monad) where
-  fresh = FreshT (\ s -> pure (s, succ s))
-
-instance MonadFresh name monad => MonadFresh name (ReaderT read monad) where
-  fresh = lift fresh
-
-instance MonadFresh name monad => MonadFresh name (StateT state monad) where
-  fresh = lift fresh
