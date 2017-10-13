@@ -61,15 +61,13 @@ elaborate (Fix (Pair fst snd)) = do
 elaborate (Fix (Fst pair)) = do
   t1 <- fresh
   t2 <- fresh
-  pair' <- elaborate pair
-  pairTy <- unify (extract pair') (tvar t1 .* tvar t2)
-  pure (fromMaybe (tvar t1) (fstType pairTy) :< Fst pair')
+  pair' <- check pair (tvar t1 .* tvar t2)
+  pure (tvar t1 :< Fst pair')
 elaborate (Fix (Snd pair)) = do
   t1 <- fresh
   t2 <- fresh
-  pair' <- elaborate pair
-  pairTy <- unify (extract pair') (tvar t1 .* tvar t2)
-  pure (fromMaybe (tvar t2) (sndType pairTy) :< Snd pair')
+  pair' <- check pair (tvar t1 .* tvar t2)
+  pure (tvar t2 :< Snd pair')
 
 check :: Term -> PartialType Error -> Elab (Cofree Expr (PartialType Error))
 check term ty = do
