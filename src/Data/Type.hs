@@ -15,33 +15,35 @@ data Type a
   | a :* a
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
+type PartialType = Free Type
+
 infixr 0 :->
 infixl 7 :*
 
-tvar :: Name -> Free Type a
+tvar :: Name -> PartialType a
 tvar name = wrap (TVar name)
 
-makeForAll :: Name -> Free Type a -> Free Type a
+makeForAll :: Name -> PartialType a -> PartialType a
 makeForAll name body = wrap (ForAll name body)
 
-(.->) :: Free Type a -> Free Type a -> Free Type a
+(.->) :: PartialType a -> PartialType a -> PartialType a
 arg .-> ret = wrap (arg :-> ret)
 
 infixr 0 .->
 
-(.*) :: Free Type a -> Free Type a -> Free Type a
+(.*) :: PartialType a -> PartialType a -> PartialType a
 fst .* snd = wrap (fst :* snd)
 
 infixl 7 .*
 
-bool :: Free Type a
+bool :: PartialType a
 bool = wrap Bool
 
 
 class FreeTypeVariables t where
   freeTypeVariables :: t -> Set.Set Name
 
-instance FreeTypeVariables (Free Type a) where
+instance FreeTypeVariables (PartialType a) where
   freeTypeVariables = iter freeTypeVariables . (Set.empty <$)
 
 instance FreeTypeVariables t => FreeTypeVariables (Type t) where
@@ -52,23 +54,23 @@ instance FreeTypeVariables t => FreeTypeVariables (Type t) where
 instance FreeTypeVariables (Set.Set Name) where
   freeTypeVariables = id
 
-returnType :: Free Type a -> Maybe (Free Type a)
+returnType :: PartialType a -> Maybe (PartialType a)
 returnType (Free (_ :-> returnTy)) = Just returnTy
 returnType (Pure err)              = Just (Pure err)
 returnType _                       = Nothing
 
-fstType :: Free Type a -> Maybe (Free Type a)
+fstType :: PartialType a -> Maybe (PartialType a)
 fstType (Free (fstTy :* _)) = Just fstTy
 fstType (Pure err)          = Just (Pure err)
 fstType _                   = Nothing
 
-sndType :: Free Type a -> Maybe (Free Type a)
+sndType :: PartialType a -> Maybe (PartialType a)
 sndType (Free (_ :* sndTy)) = Just sndTy
 sndType (Pure err)          = Just (Pure err)
 sndType _                   = Nothing
 
 
-instance Binder (Free Type a) where
+instance Binder (PartialType a) where
   substitute subst ty = iter (\ ty subst -> case ty of
     TVar name        -> fromMaybe (Free (TVar name)) (substLookup name subst)
     ForAll name body -> Free (ForAll name (body (substDelete name subst)))

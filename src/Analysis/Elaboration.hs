@@ -18,18 +18,18 @@ import Data.Type
 
 data Error
   = FreeVariable Name
-  | TypeMismatch (Type (Free Type Error)) (Type (Free Type Error))
-  | InfiniteType Name (Type (Free Type Error))
+  | TypeMismatch (Type (PartialType Error)) (Type (PartialType Error))
+  | InfiniteType Name (Type (PartialType Error))
   deriving (Eq, Ord, Read, Show)
 
-type Elab = StateT (Subst (Free Type Error)) (ReaderT (Env (Fix Type)) (Fresh Name))
+type Elab = StateT (Subst (PartialType Error)) (ReaderT (Env (Fix Type)) (Fresh Name))
 
-type ElabTerm = Cofree Expr (Free Type Error)
+type ElabTerm = Cofree Expr (PartialType Error)
 
-runElab :: Elab a -> (a, Subst (Free Type Error))
+runElab :: Elab a -> (a, Subst (PartialType Error))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-substElaborated :: ElabTerm -> Subst (Free Type Error) -> ElabTerm
+substElaborated :: ElabTerm -> Subst (PartialType Error) -> ElabTerm
 substElaborated = cata (\ (ty F.:< expr) subst -> substitute subst ty :< (($ subst) <$> expr))
 
 
@@ -71,14 +71,14 @@ elaborate (Fix (Snd pair)) = do
   pairTy <- unify (extract pair') (tvar t1 .* tvar t2)
   pure (fromMaybe (tvar t2) (sndType pairTy) :< Snd pair')
 
-check :: Term -> Free Type Error -> Elab (Cofree Expr (Free Type Error))
+check :: Term -> PartialType Error -> Elab (Cofree Expr (PartialType Error))
 check term ty = do
   term' <- elaborate term
   termTy <- unify (extract term') ty
   pure (termTy :< unwrap term')
 
 
-unify :: Free Type Error -> Free Type Error -> Elab (Free Type Error)
+unify :: PartialType Error -> PartialType Error -> Elab (PartialType Error)
 unify (Pure e1) _         = pure (Pure e1)
 unify _         (Pure e2) = pure (Pure e2)
 unify (Free t1) (Free t2)
@@ -89,7 +89,7 @@ unify (Free t1) (Free t2)
   | Bool       <- t1, Bool       <- t2 = pure bool
   | otherwise = pure (Pure (TypeMismatch t1 t2))
 
-bind :: Name -> Type (Free Type Error) -> Elab (Free Type Error)
+bind :: Name -> Type (PartialType Error) -> Elab (PartialType Error)
 bind name ty
   | TVar name' <- ty, name == name'        = pure (wrap ty)
   | Set.member name (freeTypeVariables ty) = pure (Pure (InfiniteType name ty))
