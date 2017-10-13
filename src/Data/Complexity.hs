@@ -79,9 +79,10 @@ freeTypeVariables = cata $ \ ty -> case ty of
   ContinueF (ForAll name body) -> Set.delete name body
   _                            -> fold ty
 
-returnType :: CoAttr Type a -> CoAttr Type a
-returnType (Continue (_ :-> returnTy)) = returnTy
-returnType other                       = other
+returnType :: CoAttr Type a -> Maybe (CoAttr Type a)
+returnType (Continue (_ :-> returnTy)) = Just returnTy
+returnType (Stop err)                  = Just (Stop err)
+returnType _                           = Nothing
 
 
 newtype Term f = In { out :: f (Term f) }
@@ -198,7 +199,7 @@ elaborate (In (App f a)) = do
   f' <- elaborate f
   a' <- elaborate a
   fTy <- unify (attr f') (Continue (attr a' :-> Continue (TVar t)))
-  pure (Attr (returnType fTy) (App f' a'))
+  pure (Attr (fromMaybe (Continue (TVar t)) (returnType fTy)) (App f' a'))
 elaborate (In (Var name)) = do
   env <- ask
   pure (Attr (maybe (Stop (FreeVariable name)) (cata Continue) (envLookup name env)) (Var name))
