@@ -1,4 +1,4 @@
 module Data.Interval where
 
-data Interval a = Interval {-# UNPACK #-} !a {-# UNPACK #-} !a
+data Interval a = Interval !a !a
   deriving (Eq, Ord, Read, Show)
