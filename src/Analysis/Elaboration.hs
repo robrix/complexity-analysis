@@ -81,6 +81,7 @@ unify t1 t2
   | Free (TVar name1) <- t1                        = bind name1 t2
   | Free (TVar name2) <- t2                        = bind name2 t1
   | Free (a1 :-> b1) <- t1, Free (a2 :-> b2) <- t2 = (.->) <$> unify a1 a2 <*> unify b1 b2
+  | Free (a1 :* b1)  <- t1, Free (a2 :* b2)  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
   | t1 == t2                                       = pure t2
   | otherwise                                      = pure (Pure (TypeMismatch t1 t2))
 
