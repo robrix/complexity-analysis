@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances, MultiParamTypeClasses #-}
 module Data.Type where
 
 import Control.Monad.Free
@@ -55,7 +55,7 @@ instance FreeTypeVariables (Set.Set Name) where
   freeTypeVariables = id
 
 
-instance Binder (PartialType a) where
+instance Binder (PartialType a) (PartialType a) where
   substitute subst ty = iter (\ ty subst -> case ty of
     TVar name        -> fromMaybe (Free (TVar name)) (substLookup name subst)
     ForAll name body -> Free (ForAll name (body (substDelete name subst)))
