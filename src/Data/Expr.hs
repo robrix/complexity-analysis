@@ -15,38 +15,40 @@ data Expr a
   | Snd a
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
-makeAbs :: Name -> Fix Expr -> Fix Expr
+type Term = Fix Expr
+
+makeAbs :: Name -> Term -> Term
 makeAbs name body = Fix (Abs name body)
 
-lam :: (Fix Expr -> Fix Expr) -> Fix Expr
+lam :: (Term -> Term) -> Term
 lam hoas = makeAbs n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (var n)
 
-maxBoundVariable :: Fix Expr -> Maybe Name
+maxBoundVariable :: Term -> Maybe Name
 maxBoundVariable = cata $ \ expr -> case expr of
   Abs name _ -> Just name
   _          -> foldr max Nothing expr
 
-(#) :: Fix Expr -> Fix Expr -> Fix Expr
+(#) :: Term -> Term -> Term
 func # arg = Fix (App func arg)
 
 infixl 9 #
 
-var :: Name -> Fix Expr
+var :: Name -> Term
 var name = Fix (Var name)
 
-lit :: Bool -> Fix Expr
+lit :: Bool -> Term
 lit b = Fix (Lit b)
 
-iff :: Fix Expr -> Fix Expr -> Fix Expr -> Fix Expr
+iff :: Term -> Term -> Term -> Term
 iff c t e = Fix (If c t e)
 
-pair :: Fix Expr -> Fix Expr -> Fix Expr
+pair :: Term -> Term -> Term
 pair fst snd = Fix (Pair fst snd)
 
-pfst :: Fix Expr -> Fix Expr
+pfst :: Term -> Term
 pfst pair = Fix (Fst pair)
 
-psnd :: Fix Expr -> Fix Expr
+psnd :: Term -> Term
 psnd pair = Fix (Snd pair)

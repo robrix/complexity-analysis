@@ -31,7 +31,7 @@ substElaborated :: Cofree Expr (Free Type Error) -> Subst (Free Type Error) -> C
 substElaborated = cata (\ (ty F.:< expr) subst -> substitute subst ty :< (($ subst) <$> expr))
 
 
-elaborate :: Fix Expr -> Elab (Cofree Expr (Free Type Error))
+elaborate :: Term -> Elab (Cofree Expr (Free Type Error))
 elaborate (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (envExtend n (Fix (TVar t))) (elaborate b)
@@ -69,7 +69,7 @@ elaborate (Fix (Snd pair)) = do
   pairTy <- unify (extract pair') (tvar t1 .* tvar t2)
   pure (fromMaybe (tvar t2) (sndType pairTy) :< Snd pair')
 
-check :: Fix Expr -> Free Type Error -> Elab (Cofree Expr (Free Type Error))
+check :: Term -> Free Type Error -> Elab (Cofree Expr (Free Type Error))
 check term ty = do
   term' <- elaborate term
   termTy <- unify (extract term') ty
