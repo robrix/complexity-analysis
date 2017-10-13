@@ -28,6 +28,7 @@ data Expr a
   | Var Name
   | Lit Bool
   | If a a a
+  | Pair a a
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
 makeAbs :: Name -> Term Expr -> Term Expr
@@ -57,15 +58,20 @@ bool b = In (Lit b)
 iff :: Term Expr -> Term Expr -> Term Expr -> Term Expr
 iff c t e = In (If c t e)
 
+pair :: Term Expr -> Term Expr -> Term Expr
+pair fst snd = In (Pair fst snd)
+
 
 data Type a
   = TVar Name
   | ForAll Name a
   | a :-> a
   | Bool
+  | a :* a
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
 infixr 0 :->
+infixl 7 :*
 
 freeTypeVariables :: CoAttr Type a -> Set.Set Name
 freeTypeVariables = cata $ \ ty -> case ty of
@@ -203,6 +209,10 @@ elaborate (In (If c t e)) = do
   e' <- elaborate e
   result <- unify (attr t') (attr e')
   pure (Attr result (If c' t' e'))
+elaborate (In (Pair fst snd)) = do
+  fst' <- elaborate fst
+  snd' <- elaborate snd
+  pure (Attr (Continue (attr fst' :* attr snd')) (Pair fst' snd'))
 
 
 unify :: CoAttr Type Error -> CoAttr Type Error -> Elab (CoAttr Type Error)
