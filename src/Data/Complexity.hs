@@ -10,6 +10,7 @@ import Control.Monad.Fresh
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Bifunctor (second)
+import Data.Env
 import Data.Expr
 import Data.Function (on)
 import Data.Functor.Foldable (Recursive(..), Fix(..))
@@ -24,15 +25,6 @@ data Complexity i
   = Constant i
   deriving (Eq, Ord, Read, Show)
 
-
-newtype Env a = Env { getEnv :: [(Name, a)] }
-  deriving (Eq, Monoid, Ord, Read, Semigroup, Show)
-
-envLookup :: Name -> Env a -> Maybe a
-envLookup name = lookup name . getEnv
-
-envExtend :: Name -> a -> Env a -> Env a
-envExtend name value = Env . ((name, value) :) . getEnv
 
 newtype Subst value = Subst { getSubst :: [(Name, value)] }
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
