@@ -1,8 +1,9 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable #-}
 module Data.Expr where
 
 import Data.Functor.Foldable (Recursive(..), Fix(..))
 import Data.Name
+import GHC.Generics
 
 data Expr a
   = Abs Name a
@@ -13,7 +14,7 @@ data Expr a
   | Pair a a
   | Fst a
   | Snd a
-  deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
+  deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
 
 type Term = Fix Expr
 
