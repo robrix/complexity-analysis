@@ -24,6 +24,10 @@ instance Show1 Type where liftShowsPrec = genericLiftShowsPrec
 type PartialType = Free Type
 type TotalType = Fix Type
 
+totalize :: PartialType a -> Either [a] TotalType
+totalize = iter (fmap Fix . sequenceA) . fmap (Left . pure)
+
+
 infixr 0 :->
 infixl 7 :*
 
