@@ -29,15 +29,6 @@ type PartialElabTerm = Cofree Expr (PartialType Error)
 runElab :: Elab a -> (a, Subst (PartialType Error))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-instance Binder (PartialType Error) Error where
-  substitute _     (FreeVariable name)    = FreeVariable name
-  substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
-  substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
-
-instance Binder (PartialType Error) PartialElabTerm where
-  substitute subst (a :< f) = substitute subst a :< fmap (substitute subst) f
-
-
 elaborate :: Term -> Elab PartialElabTerm
 elaborate (Fix (Abs n b)) = do
   t <- fresh
@@ -96,3 +87,12 @@ bind name ty
   | TVar name' <- ty, name == name'        = pure (wrap ty)
   | Set.member name (freeTypeVariables ty) = pure (Pure (InfiniteType name ty))
   | otherwise                              = modify (substExtend name (wrap ty)) >> pure (wrap ty)
+
+
+instance Binder (PartialType Error) Error where
+  substitute _     (FreeVariable name)    = FreeVariable name
+  substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
+  substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
+
+instance Binder (PartialType Error) PartialElabTerm where
+  substitute subst (a :< f) = substitute subst a :< fmap (substitute subst) f
