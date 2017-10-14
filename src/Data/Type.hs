@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Data.Type where
 
 import Control.Monad.Free
@@ -6,6 +6,7 @@ import Data.Functor.Foldable (Fix(..))
 import Data.Name
 import qualified Data.Set as Set
 import Data.Subst
+import GHC.Generics
 
 data Type a
   = TVar Name
@@ -13,7 +14,7 @@ data Type a
   | a :-> a
   | Bool
   | a :* a
-  deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
+  deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
 
 type PartialType = Free Type
 type TotalType = Fix Type
