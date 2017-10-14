@@ -42,6 +42,10 @@ class GShow1 f where
   -- | showsPrec function for an application of the type constructor based on showsPrec and showList functions for the argument type.
   gliftShowsPrec :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
 
+class GShow1Body f where
+  -- | showsPrec function for the body of an application of the type constructor based on showsPrec and showList functions for the argument type.
+  gliftShowsPrecBody :: Fixity -> String -> (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
+
 -- | showList function for an application of the type constructor based on showsPrec and showList functions for the argument type. The default implementation using standard list syntax is correct for most types.
 gliftShowList :: GShow1 f => (Int -> a -> ShowS) -> ([a] -> ShowS) -> [f a] -> ShowS
 gliftShowList sp sl = showListWith (gliftShowsPrec sp sl 0)
@@ -110,9 +114,6 @@ instance (Ord1 f, GOrd1 g) => GOrd1 (f :.: g) where
   gliftCompare f (Comp1 a) (Comp1 b) = liftCompare (gliftCompare f) a b
 
 
-instance GShow1 U1 where
-  gliftShowsPrec _ _ _ _ = id
-
 instance GShow1 Par1 where
   gliftShowsPrec sp _ d (Par1 a) = sp d a
 
@@ -125,8 +126,19 @@ instance Show1 f => GShow1 (Rec1 f) where
 instance GShow1 f => GShow1 (M1 D c f) where
   gliftShowsPrec sp sl d (M1 a) = gliftShowsPrec sp sl d a
 
-instance (Constructor c, GShow1 f) => GShow1 (M1 C c f) where
-  gliftShowsPrec sp sl d m = showsUnaryWith (gliftShowsPrec sp sl) (conName m) d (unM1 m)
+instance (Constructor c, GShow1Body f) => GShow1 (M1 C c f) where
+  gliftShowsPrec sp sl d m = gliftShowsPrecBody (conFixity m) (conName m) sp sl d (unM1 m)
+
+instance GShow1Body U1 where
+  gliftShowsPrecBody _ conName _ _ _ _ = showString conName
+
+instance GShow1 f => GShow1Body (M1 S c f) where
+  gliftShowsPrecBody _ conName sp sl d (M1 a) = showsUnaryWith (gliftShowsPrec sp sl) conName d a
+
+instance (GShow1 f, GShow1 g) => GShow1Body (f :*: g) where
+  gliftShowsPrecBody fixity conName sp sl d (a :*: b) = case fixity of
+    Prefix       -> showsUnaryWith (gliftShowsPrec sp sl) conName d a
+    Infix _ prec -> showParen (d > prec) $ gliftShowsPrec sp sl (succ prec) a . showChar ' ' . showString conName . showChar ' ' . gliftShowsPrec sp sl (succ prec) b
 
 instance GShow1 f => GShow1 (M1 S c f) where
   gliftShowsPrec sp sl d (M1 a) = gliftShowsPrec sp sl d a
