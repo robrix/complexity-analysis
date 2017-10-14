@@ -3,7 +3,6 @@ module Analysis.Elaboration where
 
 import Control.Comonad (extract)
 import Control.Comonad.Cofree
-import qualified Control.Comonad.Trans.Cofree as F
 import Control.Monad.Free
 import Control.Monad.Fresh
 import Control.Monad.Reader
@@ -11,7 +10,7 @@ import Control.Monad.State
 import Data.Either (fromLeft)
 import Data.Env
 import Data.Expr
-import Data.Functor.Foldable (Recursive(..), Fix(..))
+import Data.Functor.Foldable (Fix(..))
 import Data.Name
 import qualified Data.Set as Set
 import Data.Subst
@@ -29,9 +28,6 @@ type PartialElabTerm = Cofree Expr (PartialType Error)
 
 runElab :: Elab a -> (a, Subst (PartialType Error))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
-
-substElaborated :: PartialElabTerm -> Subst (PartialType Error) -> PartialElabTerm
-substElaborated = cata (\ (ty F.:< expr) subst -> substitute subst ty :< (($ subst) <$> expr))
 
 instance Binder (PartialType Error) Error where
   substitute _     (FreeVariable name)    = FreeVariable name
