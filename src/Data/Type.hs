@@ -3,7 +3,7 @@ module Data.Type where
 
 import Control.Monad.Free
 import Data.Functor.Classes.Generic
-import Data.Functor.Foldable (Fix(..))
+import Data.Functor.Foldable (Recursive(..), Fix(..))
 import Data.Name
 import qualified Data.Set as Set
 import Data.Subst
@@ -26,6 +26,9 @@ instance Show1 Type where liftShowsPrec = genericLiftShowsPrec
 
 type PartialType = Free Type
 type TotalType = Fix Type
+
+totalToPartial :: TotalType -> PartialType a
+totalToPartial = cata wrap
 
 partialToTotal :: PartialType a -> Either [a] TotalType
 partialToTotal = iter (fmap Fix . sequenceA) . fmap (Left . pure)
