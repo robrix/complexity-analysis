@@ -2,6 +2,7 @@
 module Data.Type where
 
 import Control.Monad.Free
+import Data.Functor.Classes.Generic
 import Data.Functor.Foldable (Fix(..))
 import Data.Name
 import qualified Data.Set as Set
@@ -15,6 +16,10 @@ data Type a
   | Bool
   | a :* a
   deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
+
+instance Eq1 Type where liftEq = genericLiftEq
+instance Ord1 Type where liftCompare = genericLiftCompare
+instance Show1 Type where liftShowsPrec = genericLiftShowsPrec
 
 type PartialType = Free Type
 type TotalType = Fix Type
