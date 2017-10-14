@@ -17,6 +17,9 @@ data Type a
   | a :* a
   deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
 
+infixr 0 :->
+infixl 7 :*
+
 instance Eq1 Type where liftEq = genericLiftEq
 instance Ord1 Type where liftCompare = genericLiftCompare
 instance Show1 Type where liftShowsPrec = genericLiftShowsPrec
@@ -27,9 +30,6 @@ type TotalType = Fix Type
 totalize :: PartialType a -> Either [a] TotalType
 totalize = iter (fmap Fix . sequenceA) . fmap (Left . pure)
 
-
-infixr 0 :->
-infixl 7 :*
 
 tvar :: Name -> PartialType a
 tvar name = wrap (TVar name)
