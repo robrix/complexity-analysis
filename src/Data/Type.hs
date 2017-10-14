@@ -13,8 +13,8 @@ data Type a
   = TVar Name
   | ForAll Name a
   | a :-> a
-  | Bool
   | a :* a
+  | Bool
   deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
 
 infixr 0 :->
@@ -73,8 +73,8 @@ substType :: Binder a a => Subst a -> Type a -> Either (Type a) a
 substType subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup name subst)
 substType subst (ForAll name body) = Left (ForAll name (substitute (substDelete name subst) body))
 substType subst (arg :-> ret)      = Left (substitute subst arg :-> substitute subst ret)
-substType _     Bool               = Left Bool
 substType subst (fst :* snd)       = Left (substitute subst fst :* substitute subst snd)
+substType _     Bool               = Left Bool
 
 instance Binder (PartialType a) a => Binder (PartialType a) (PartialType a) where
   substitute subst (Free t) = either wrap id (substType subst t)
