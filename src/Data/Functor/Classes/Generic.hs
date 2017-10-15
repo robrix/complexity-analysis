@@ -166,7 +166,6 @@ instance (GShow1 f, GShow1 g) => GShow1Body (f :*: g) where
       then showParen (d > 10) $ showString conName . showChar ' ' . showBraces True (foldr (.) id (intersperse (showString ", ") (gliftShowsPrecAll sp sl 11 a ++ gliftShowsPrecAll sp sl 11 b)))
       else showsBinaryWith (gliftShowsPrec sp sl) (gliftShowsPrec sp sl) conName d a b
     Infix _ prec -> showParen (d > prec) $ gliftShowsPrec sp sl (succ prec) a . showChar ' ' . showString conName . showChar ' ' . gliftShowsPrec sp sl (succ prec) b
-    where showBraces should rest = if should then showChar '{' . rest . showChar '}' else rest
 
 instance GShow1 f => GShow1 (M1 S c f) where
   gliftShowsPrecAll sp sl d (M1 a) = gliftShowsPrecAll sp sl d a
@@ -180,3 +179,6 @@ instance (GShow1 f, GShow1 g) => GShow1 (f :*: g) where
 
 instance (Show1 f, GShow1 g) => GShow1 (f :.: g) where
   gliftShowsPrecAll sp sl d (Comp1 a) = [liftShowsPrec (gliftShowsPrec sp sl) (gliftShowList sp sl) d a]
+
+showBraces :: Bool -> ShowS -> ShowS
+showBraces should rest = if should then showChar '{' . rest . showChar '}' else rest
