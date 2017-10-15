@@ -18,12 +18,18 @@ import Text.Show
 -- >>> :set -XFlexibleContexts
 -- >>> :set -XDeriveGeneric
 -- >>> import Test.QuickCheck
--- >>> data Tree a = Tree a :$: Tree a | Leaf a | Empty deriving (Eq, Generic1, Ord, Show)
--- >>> instance Eq1 Tree where liftEq = genericLiftEq
--- >>> instance Ord1 Tree where liftCompare = genericLiftCompare
--- >>> instance Show1 Tree where liftShowsPrec = genericLiftShowsPrec
--- >>> instance Arbitrary a => Arbitrary (Tree a) where arbitrary = oneof [ pure Empty, Leaf <$> arbitrary, (:$:) <$> arbitrary <*> arbitrary ]
--- >>> let asTree tree = case tree of { _ :$: _ -> tree ; _ -> tree }
+-- >>> :{
+-- data Tree a = Tree a :$: Tree a | Leaf a | Empty
+--   deriving (Eq, Generic1, Ord, Show)
+-- instance Eq1 Tree where liftEq = genericLiftEq
+-- instance Ord1 Tree where liftCompare = genericLiftCompare
+-- instance Show1 Tree where liftShowsPrec = genericLiftShowsPrec
+-- instance Arbitrary a => Arbitrary (Tree a) where
+--   arbitrary = oneof [ pure Empty, Leaf <$> arbitrary, (:$:) <$> arbitrary <*> arbitrary ]
+-- asTree :: Tree a -> Tree a
+-- asTree tree = tree
+-- :}
+--
 -- >>> :{
 -- data Triple a = Triple { one :: a, two :: a, three :: a } deriving (Eq, Generic1, Ord, Show)
 -- instance Arbitrary a => Arbitrary (Triple a) where arbitrary = Triple <$> arbitrary <*> arbitrary <*> arbitrary
