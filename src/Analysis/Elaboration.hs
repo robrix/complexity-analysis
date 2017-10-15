@@ -72,15 +72,18 @@ check term ty = do
 
 
 unify :: PartialType Error -> PartialType Error -> Elab (PartialType Error)
-unify (Pure e1) _         = pure (Pure e1)
-unify _         (Pure e2) = pure (Pure e2)
-unify (Free t1) (Free t2)
-  | TVar name1 <- t1                   = bind name1 t2
-  |                   TVar name2 <- t2 = bind name2 t1
-  | a1 :-> b1  <- t1, a2 :-> b2  <- t2 = (.->) <$> unify a1 a2 <*> unify b1 b2
-  | a1 :*  b1  <- t1, a2 :*  b2  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
-  | Bool       <- t1, Bool       <- t2 = pure bool
-  | otherwise = pure (Pure (TypeMismatch t1 t2))
+unify t1 t2 = do
+  subst <- get
+  unify' (substitute subst t1) (substitute subst t2)
+  where unify' (Pure e1) _         = pure (Pure e1)
+        unify' _         (Pure e2) = pure (Pure e2)
+        unify' (Free t1) (Free t2)
+          | TVar name1 <- t1                   = bind name1 t2
+          |                   TVar name2 <- t2 = bind name2 t1
+          | a1 :-> b1  <- t1, a2 :-> b2  <- t2 = (.->) <$> unify a1 a2 <*> unify b1 b2
+          | a1 :*  b1  <- t1, a2 :*  b2  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
+          | Bool       <- t1, Bool       <- t2 = pure bool
+          | otherwise = pure (Pure (TypeMismatch t1 t2))
 
 bind :: Name -> Type (PartialType Error) -> Elab (PartialType Error)
 bind name ty
