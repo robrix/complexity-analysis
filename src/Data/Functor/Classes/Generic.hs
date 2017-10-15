@@ -36,6 +36,7 @@ class GEq1 f where
 -- | A suitable implementation of Eq1’s liftEq for Generic1 types.
 --
 -- prop> \ a b -> genericLiftEq (==) a b == (a == asTree b)
+-- prop> \ a b@Triple{} -> genericLiftEq (==) a b == (a == b)
 genericLiftEq :: (Generic1 f, GEq1 (Rep1 f)) => (a -> b -> Bool) -> f a -> f b -> Bool
 genericLiftEq f a b = gliftEq f (from1 a) (from1 b)
 
