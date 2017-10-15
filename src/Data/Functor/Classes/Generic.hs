@@ -18,6 +18,7 @@ import Text.Show
 -- >>> :set -XDeriveGeneric
 -- >>> import Test.QuickCheck
 -- >>> data Tree a = Tree a :$: Tree a | Leaf a | Empty deriving (Eq, Generic1, Ord, Show)
+-- >>> instance Eq1 Tree where liftEq = genericLiftEq
 -- >>> instance Show1 Tree where liftShowsPrec = genericLiftShowsPrec
 -- >>> instance Arbitrary a => Arbitrary (Tree a) where arbitrary = oneof [ pure Empty, Leaf <$> arbitrary, (:$:) <$> arbitrary <*> arbitrary ]
 -- >>> let asTree tree = case tree of { _ :$: _ -> tree ; _ -> tree }
@@ -32,6 +33,8 @@ class GEq1 f where
   gliftEq :: (a -> b -> Bool) -> f a -> f b -> Bool
 
 -- | A suitable implementation of Eq1’s liftEq for Generic1 types.
+--
+-- prop> \ a b -> genericLiftEq (==) a b == (a == asTree b)
 genericLiftEq :: (Generic1 f, GEq1 (Rep1 f)) => (a -> b -> Bool) -> f a -> f b -> Bool
 genericLiftEq f a b = gliftEq f (from1 a) (from1 b)
 
