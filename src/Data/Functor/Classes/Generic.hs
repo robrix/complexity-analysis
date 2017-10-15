@@ -19,6 +19,7 @@ import Text.Show
 -- >>> import Test.QuickCheck
 -- >>> data Tree a = Tree a :$: Tree a | Leaf a | Empty deriving (Eq, Generic1, Ord, Show)
 -- >>> instance Eq1 Tree where liftEq = genericLiftEq
+-- >>> instance Ord1 Tree where liftCompare = genericLiftCompare
 -- >>> instance Show1 Tree where liftShowsPrec = genericLiftShowsPrec
 -- >>> instance Arbitrary a => Arbitrary (Tree a) where arbitrary = oneof [ pure Empty, Leaf <$> arbitrary, (:$:) <$> arbitrary <*> arbitrary ]
 -- >>> let asTree tree = case tree of { _ :$: _ -> tree ; _ -> tree }
@@ -47,6 +48,8 @@ class GOrd1 f where
   gliftCompare :: (a -> b -> Ordering) -> f a -> f b -> Ordering
 
 -- | A suitable implementation of Ord1’s liftCompare for Generic1 types.
+--
+-- prop> \ a b -> genericLiftCompare compare a b == compare a (asTree b)
 genericLiftCompare :: (Generic1 f, GOrd1 (Rep1 f)) => (a -> b -> Ordering) -> f a -> f b -> Ordering
 genericLiftCompare f a b = gliftCompare f (from1 a) (from1 b)
 
