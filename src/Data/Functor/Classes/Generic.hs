@@ -17,10 +17,10 @@ import Text.Show
 -- >>> :set -XFlexibleContexts
 -- >>> :set -XDeriveGeneric
 -- >>> import Test.QuickCheck
--- >>> data List a = a :$ List a | Nil deriving (Eq, Generic1, Ord, Show)
--- >>> instance Show1 List where liftShowsPrec = genericLiftShowsPrec
--- >>> instance Arbitrary a => Arbitrary (List a) where arbitrary = foldr (:$) Nil <$> arbitrary
--- >>> let asList list = case list of { a :$ as -> list ; Nil -> list}
+-- >>> data Tree a = Tree a :$: Tree a | Leaf a | Empty deriving (Eq, Generic1, Ord, Show)
+-- >>> instance Show1 Tree where liftShowsPrec = genericLiftShowsPrec
+-- >>> instance Arbitrary a => Arbitrary (Tree a) where arbitrary = oneof [ pure Empty, Leaf <$> arbitrary, (:$:) <$> arbitrary <*> arbitrary ]
+-- >>> let asTree tree = case tree of { _ :$: _ -> tree ; _ -> tree }
 
 -- | Generically-derivable lifting of the 'Eq' class to unary type constructors.
 class GEq1 f where
@@ -50,7 +50,7 @@ genericLiftCompare f a b = gliftCompare f (from1 a) (from1 b)
 class GShow1 f where
   -- | showsPrec function for an application of the type constructor based on showsPrec and showList functions for the argument type.
   --
-  -- prop> \ a -> genericLiftShowsPrec showsPrec showList 0 a "" == showsPrec 0 (asList a) ""
+  -- prop> \ a -> genericLiftShowsPrec showsPrec showList 0 a "" == showsPrec 0 (asTree a) ""
   gliftShowsPrec :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
 
 class GShow1Body f where
