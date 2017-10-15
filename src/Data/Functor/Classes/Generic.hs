@@ -31,8 +31,10 @@ import Text.Show
 -- :}
 --
 -- >>> :{
--- data Triple a = Triple { one :: a, two :: a, three :: a } deriving (Eq, Generic1, Ord, Show)
--- instance Arbitrary a => Arbitrary (Triple a) where arbitrary = Triple <$> arbitrary <*> arbitrary <*> arbitrary
+-- data Triple a = Triple { one :: a, two :: a, three :: a }
+--   deriving (Eq, Generic1, Ord, Show)
+-- instance Arbitrary a => Arbitrary (Triple a) where
+--   arbitrary = Triple <$> arbitrary <*> arbitrary <*> arbitrary
 -- :}
 
 -- | Generically-derivable lifting of the 'Eq' class to unary type constructors.
