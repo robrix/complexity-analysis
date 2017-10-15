@@ -1,16 +1,16 @@
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
 module Analysis.Elaboration where
 
 import Control.Comonad (extract)
 import Control.Comonad.Cofree
-import qualified Control.Comonad.Trans.Cofree as F
 import Control.Monad.Free
 import Control.Monad.Fresh
 import Control.Monad.Reader
 import Control.Monad.State
+import Data.Either (fromLeft)
 import Data.Env
 import Data.Expr
-import Data.Functor.Foldable (Recursive(..), Fix(..))
-import Data.Maybe (fromMaybe)
+import Data.Functor.Foldable (Fix(..))
 import Data.Name
 import qualified Data.Set as Set
 import Data.Subst
@@ -18,36 +18,33 @@ import Data.Type
 
 data Error
   = FreeVariable Name
-  | TypeMismatch (Type (Free Type Error)) (Type (Free Type Error))
-  | InfiniteType Name (Free Type Error)
+  | TypeMismatch (Type (PartialType Error)) (Type (PartialType Error))
+  | InfiniteType Name (Type (PartialType Error))
   deriving (Eq, Ord, Read, Show)
 
-type Elab = StateT (Subst (Free Type Error)) (ReaderT (Env (Fix Type)) (Fresh Name))
+type Elab = StateT (Subst (PartialType Error)) (ReaderT (Env Name) (Fresh Name))
 
-runElab :: Elab a -> (a, Subst (Free Type Error))
+type PartialElabTerm = Cofree Expr (PartialType Error)
+
+runElab :: Elab a -> (a, Subst (PartialType Error))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-substElaborated :: Cofree Expr (Free Type Error) -> Subst (Free Type Error) -> Cofree Expr (Free Type Error)
-substElaborated = cata (\ (ty F.:< expr) subst -> substitute subst ty :< (($ subst) <$> expr))
-
-
-elaborate :: Fix Expr -> Elab (Cofree Expr (Free Type Error))
+elaborate :: Term -> Elab PartialElabTerm
 elaborate (Fix (Abs n b)) = do
   t <- fresh
-  b' <- local (envExtend n (Fix (TVar t))) (elaborate b)
-  pure (Free (Free (TVar t) :-> extract b') :< Abs n b')
+  b' <- local (envExtend n t) (elaborate b)
+  pure ((tvar t .-> extract b') :< Abs n b')
 elaborate (Fix (App f a)) = do
   t <- fresh
-  f' <- elaborate f
   a' <- elaborate a
-  fTy <- unify (extract f') (Free (extract a' :-> Free (TVar t)))
-  pure (fromMaybe (Free (TVar t)) (returnType fTy) :< App f' a')
+  f' <- check f (extract a' .-> tvar t)
+  pure (tvar t :< App f' a')
 elaborate (Fix (Var name)) = do
   env <- ask
-  pure (maybe (Pure (FreeVariable name)) (cata Free) (envLookup name env) :< Var name)
-elaborate (Fix (Lit b)) = pure (Free Bool :< Lit b)
+  pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env) :< Var name)
+elaborate (Fix (Lit b)) = pure (bool :< Lit b)
 elaborate (Fix (If c t e)) = do
-  c' <- elaborate c
+  c' <- check c bool
   t' <- elaborate t
   e' <- elaborate e
   result <- unify (extract t') (extract e')
@@ -55,33 +52,48 @@ elaborate (Fix (If c t e)) = do
 elaborate (Fix (Pair fst snd)) = do
   fst' <- elaborate fst
   snd' <- elaborate snd
-  pure (Free (extract fst' :* extract snd') :< Pair fst' snd')
+  pure (extract fst' .* extract snd' :< Pair fst' snd')
 elaborate (Fix (Fst pair)) = do
   t1 <- fresh
   t2 <- fresh
-  pair' <- elaborate pair
-  pairTy <- unify (extract pair') (Free (Free (TVar t1) :* Free (TVar t2)))
-  pure (fromMaybe (Free (TVar t1)) (fstType pairTy) :< Fst pair')
+  pair' <- check pair (tvar t1 .* tvar t2)
+  pure (tvar t1 :< Fst pair')
 elaborate (Fix (Snd pair)) = do
   t1 <- fresh
   t2 <- fresh
-  pair' <- elaborate pair
-  pairTy <- unify (extract pair') (Free (Free (TVar t1) :* Free (TVar t2)))
-  pure (fromMaybe (Free (TVar t2)) (sndType pairTy) :< Snd pair')
+  pair' <- check pair (tvar t1 .* tvar t2)
+  pure (tvar t2 :< Snd pair')
+
+check :: Term -> PartialType Error -> Elab (Cofree Expr (PartialType Error))
+check term ty = do
+  term' <- elaborate term
+  termTy <- unify (extract term') ty
+  pure (termTy :< unwrap term')
 
 
-unify :: Free Type Error -> Free Type Error -> Elab (Free Type Error)
-unify (Pure err1)   _             = pure (Pure err1)
-unify _             (Pure err2)   = pure (Pure err2)
+unify :: PartialType Error -> PartialType Error -> Elab (PartialType Error)
+unify (Pure e1) _         = pure (Pure e1)
+unify _         (Pure e2) = pure (Pure e2)
 unify (Free t1) (Free t2)
-  | t1 == t2  = pure (Free t2)
-  | otherwise = case (t1, t2) of
-    (a1 :-> b1,  a2 :-> b2)  -> (Free .) . (:->) <$> unify a1 a2 <*> unify b1 b2
-    (TVar name1, _)          -> bind name1 (Free t2)
-    (_,          TVar name2) -> bind name2 (Free t1)
-    (t1,         t2)         -> pure (Pure (TypeMismatch t1 t2))
+  | TVar name1 <- t1                   = bind name1 t2
+  |                   TVar name2 <- t2 = bind name2 t1
+  | a1 :-> b1  <- t1, a2 :-> b2  <- t2 = (.->) <$> unify a1 a2 <*> unify b1 b2
+  | a1 :*  b1  <- t1, a2 :*  b2  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
+  | Bool       <- t1, Bool       <- t2 = pure bool
+  | otherwise = pure (Pure (TypeMismatch t1 t2))
 
-bind :: Name -> Free Type Error -> Elab (Free Type Error)
+bind :: Name -> Type (PartialType Error) -> Elab (PartialType Error)
 bind name ty
+  | TVar name' <- ty, name == name'        = pure (wrap ty)
   | Set.member name (freeTypeVariables ty) = pure (Pure (InfiniteType name ty))
-  | otherwise                              = modify (substExtend name ty) >> pure ty
+  | otherwise                              = do
+    subst <- get
+    maybe (modify (substExtend name (wrap ty)) >> pure (wrap ty)) (unify (wrap ty)) (substLookup name subst)
+
+instance Binder (PartialType Error) Error where
+  substitute _     (FreeVariable name)    = FreeVariable name
+  substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
+  substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
+
+instance Binder (PartialType Error) PartialElabTerm where
+  substitute subst (a :< f) = substitute subst a :< fmap (substitute subst) f

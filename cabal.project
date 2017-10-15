@@ -1,0 +1,2 @@
+packages: complexity-analysis.cabal
+jobs: $ncpus

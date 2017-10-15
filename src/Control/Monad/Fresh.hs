@@ -24,10 +24,7 @@ instance Functor monad => Functor (FreshT name monad) where
 instance Monad monad => Applicative (FreshT name monad) where
   pure = FreshT . (pure .) . (,)
 
-  f <*> a = FreshT (\ s -> do
-    (f', s') <- runFreshT f s
-    (a', s'')<- runFreshT a s'
-    pure (f' a', s''))
+  (<*>) = ap
 
 instance Monad monad => Monad (FreshT name monad) where
   return = pure
