@@ -83,15 +83,16 @@ genericLiftCompare f a b = gliftCompare f (from1 a) (from1 b)
 
 -- | Generically-derivable lifting of the 'Show' class to unary type constructors.
 class GShow1 f where
-  gliftShowsPrecAll :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> [ShowS]
+  -- | showsPrec function for an application of the type constructor based on showsPrec and showList functions for the argument type.
+  gliftShowsPrec :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
 
-class GShow1Body f where
+class GShow1 f => GShow1Body f where
   -- | showsPrec function for the body of an application of the type constructor based on showsPrec and showList functions for the argument type.
   gliftShowsPrecBody :: Fixity -> Bool -> String -> (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
 
--- | showsPrec function for an application of the type constructor based on showsPrec and showList functions for the argument type.
-gliftShowsPrec :: GShow1 f => (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
-gliftShowsPrec sp sl d = foldr (.) id . intersperse (showChar ' ') . gliftShowsPrecAll sp sl d
+  gliftShowsPrecAll :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> [ShowS]
+  gliftShowsPrecAll sp sl d a = [gliftShowsPrec sp sl d a]
+
 
 -- | showList function for an application of the type constructor based on showsPrec and showList functions for the argument type. The default implementation using standard list syntax is correct for most types.
 gliftShowList :: GShow1 f => (Int -> a -> ShowS) -> ([a] -> ShowS) -> [f a] -> ShowS
@@ -166,46 +167,51 @@ instance (Ord1 f, GOrd1 g) => GOrd1 (f :.: g) where
   gliftCompare f (Comp1 a) (Comp1 b) = liftCompare (gliftCompare f) a b
 
 
+instance GShow1 U1 where
+  gliftShowsPrec _ _ _ _ = id
+
 instance GShow1 Par1 where
-  gliftShowsPrecAll sp _ d (Par1 a) = [sp d a]
+  gliftShowsPrec sp _ d (Par1 a) = sp d a
 
 instance Show c => GShow1 (K1 i c) where
-  gliftShowsPrecAll _ _ d (K1 a) = [showsPrec d a]
+  gliftShowsPrec _ _ d (K1 a) = showsPrec d a
 
 instance Show1 f => GShow1 (Rec1 f) where
-  gliftShowsPrecAll sp sl d (Rec1 a) = [liftShowsPrec sp sl d a]
+  gliftShowsPrec sp sl d (Rec1 a) = liftShowsPrec sp sl d a
 
 instance GShow1 f => GShow1 (M1 D c f) where
-  gliftShowsPrecAll sp sl d (M1 a) = gliftShowsPrecAll sp sl d a
+  gliftShowsPrec sp sl d (M1 a) = gliftShowsPrec sp sl d a
 
 instance (Constructor c, GShow1Body f) => GShow1 (M1 C c f) where
-  gliftShowsPrecAll sp sl d m = [gliftShowsPrecBody (conFixity m) (conIsRecord m) (conName m) sp sl d (unM1 m)]
+  gliftShowsPrec sp sl d m = gliftShowsPrecBody (conFixity m) (conIsRecord m) (conName m) sp sl d (unM1 m)
 
 instance GShow1Body U1 where
   gliftShowsPrecBody _ _ conName _ _ _ _ = showString conName
 
-instance GShow1 f => GShow1Body (M1 S c f) where
-  gliftShowsPrecBody _ conIsRecord conName sp sl d (M1 a) = showParen (d > 10) $ showString conName . showChar ' ' . showBraces conIsRecord (gliftShowsPrec sp sl d a)
+instance (Selector s, GShow1 f) => GShow1Body (M1 S s f) where
+  gliftShowsPrecBody _ conIsRecord conName sp sl d m = showParen (d > 10) $ showString conName . showChar ' ' . showBraces conIsRecord ((if null (selName m) then id else showString (selName m) . showString " = ") . gliftShowsPrec sp sl d (unM1 m))
 
-instance (GShow1 f, GShow1 g) => GShow1Body (f :*: g) where
+instance (GShow1Body f, GShow1Body g) => GShow1Body (f :*: g) where
   gliftShowsPrecBody conFixity conIsRecord conName sp sl d (a :*: b) = case conFixity of
-    Prefix       -> if conIsRecord
-      then showParen (d > 10) $ showString conName . showChar ' ' . showBraces True (foldr (.) id (intersperse (showString ", ") (gliftShowsPrecAll sp sl 11 a ++ gliftShowsPrecAll sp sl 11 b)))
-      else showsBinaryWith (gliftShowsPrec sp sl) (gliftShowsPrec sp sl) conName d a b
+    Prefix       -> showParen (d > 10) $ showString conName . showChar ' ' . if conIsRecord
+      then showBraces True (foldr (.) id (intersperse (showString ", ") (gliftShowsPrecAll sp sl 11 (a :*: b))))
+      else foldr (.) id (intersperse (showString " ") (gliftShowsPrecAll sp sl 11 (a :*: b)))
     Infix _ prec -> showParen (d > prec) $ gliftShowsPrec sp sl (succ prec) a . showChar ' ' . showString conName . showChar ' ' . gliftShowsPrec sp sl (succ prec) b
 
-instance GShow1 f => GShow1 (M1 S c f) where
-  gliftShowsPrecAll sp sl d (M1 a) = gliftShowsPrecAll sp sl d a
-
-instance (GShow1 f, GShow1 g) => GShow1 (f :+: g) where
-  gliftShowsPrecAll sp sl d (L1 l) = gliftShowsPrecAll sp sl d l
-  gliftShowsPrecAll sp sl d (R1 r) = gliftShowsPrecAll sp sl d r
-
-instance (GShow1 f, GShow1 g) => GShow1 (f :*: g) where
   gliftShowsPrecAll sp sl d (a :*: b) = gliftShowsPrecAll sp sl d a ++ gliftShowsPrecAll sp sl d b
 
+instance GShow1 f => GShow1 (M1 S c f) where
+  gliftShowsPrec sp sl d (M1 a) = gliftShowsPrec sp sl d a
+
+instance (GShow1 f, GShow1 g) => GShow1 (f :+: g) where
+  gliftShowsPrec sp sl d (L1 l) = gliftShowsPrec sp sl d l
+  gliftShowsPrec sp sl d (R1 r) = gliftShowsPrec sp sl d r
+
+instance (GShow1 f, GShow1 g) => GShow1 (f :*: g) where
+  gliftShowsPrec sp sl d (a :*: b) = gliftShowsPrec sp sl d a . showChar ' ' . gliftShowsPrec sp sl d b
+
 instance (Show1 f, GShow1 g) => GShow1 (f :.: g) where
-  gliftShowsPrecAll sp sl d (Comp1 a) = [liftShowsPrec (gliftShowsPrec sp sl) (gliftShowList sp sl) d a]
+  gliftShowsPrec sp sl d (Comp1 a) = liftShowsPrec (gliftShowsPrec sp sl) (gliftShowList sp sl) d a
 
 showBraces :: Bool -> ShowS -> ShowS
 showBraces should rest = if should then showChar '{' . rest . showChar '}' else rest
