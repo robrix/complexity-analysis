@@ -51,6 +51,7 @@ class GOrd1 f where
 -- | A suitable implementation of Ord1’s liftCompare for Generic1 types.
 --
 -- prop> \ a b -> genericLiftCompare compare a b == compare a (asTree b)
+-- prop> \ a b@Triple{} -> genericLiftCompare compare a b == compare a b
 genericLiftCompare :: (Generic1 f, GOrd1 (Rep1 f)) => (a -> b -> Ordering) -> f a -> f b -> Ordering
 genericLiftCompare f a b = gliftCompare f (from1 a) (from1 b)
 
