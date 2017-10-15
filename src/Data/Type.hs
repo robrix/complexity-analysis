@@ -1,7 +1,9 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Data.Type where
 
+import Control.Comonad.Cofree
 import Control.Monad.Free
+import Data.Either (fromLeft)
 import Data.Functor.Classes.Generic
 import Data.Functor.Foldable (Recursive(..), Fix(..))
 import Data.Name
@@ -23,6 +25,12 @@ infixl 7 :*
 instance Eq1 Type where liftEq = genericLiftEq
 instance Ord1 Type where liftCompare = genericLiftCompare
 instance Show1 Type where liftShowsPrec = genericLiftShowsPrec
+
+data Error
+  = FreeVariable Name
+  | TypeMismatch (Type (PartialType Error)) (Type (PartialType Error))
+  | InfiniteType Name (Type (PartialType Error))
+  deriving (Eq, Ord, Read, Show)
 
 type PartialType = Free Type
 type TotalType = Fix Type
@@ -79,3 +87,11 @@ substType _     Bool               = Left Bool
 instance Binder (PartialType a) a => Binder (PartialType a) (PartialType a) where
   substitute subst (Free t) = either wrap id (substType subst t)
   substitute subst (Pure a) = Pure (substitute subst a)
+
+instance Binder (PartialType Error) Error where
+  substitute _     (FreeVariable name)    = FreeVariable name
+  substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
+  substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
+
+instance Functor f => Binder (PartialType Error) (Cofree f (PartialType Error)) where
+  substitute subst (a :< f) = substitute subst a :< fmap (substitute subst) f

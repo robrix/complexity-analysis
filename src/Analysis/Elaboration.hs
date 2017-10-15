@@ -7,7 +7,6 @@ import Control.Monad.Free
 import Control.Monad.Fresh
 import Control.Monad.Reader
 import Control.Monad.State
-import Data.Either (fromLeft)
 import Data.Env
 import Data.Expr
 import Data.Functor.Foldable (Fix(..))
@@ -15,12 +14,6 @@ import Data.Name
 import qualified Data.Set as Set
 import Data.Subst
 import Data.Type
-
-data Error
-  = FreeVariable Name
-  | TypeMismatch (Type (PartialType Error)) (Type (PartialType Error))
-  | InfiniteType Name (Type (PartialType Error))
-  deriving (Eq, Ord, Read, Show)
 
 type Elab = StateT (Subst (PartialType Error)) (ReaderT (Env Name) (Fresh Name))
 
@@ -89,11 +82,3 @@ bind name ty
   | otherwise                              = do
     subst <- get
     maybe (modify (substExtend name (wrap ty)) >> pure (wrap ty)) (unify (wrap ty)) (substLookup name subst)
-
-instance Binder (PartialType Error) Error where
-  substitute _     (FreeVariable name)    = FreeVariable name
-  substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
-  substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
-
-instance Binder (PartialType Error) PartialElabTerm where
-  substitute subst (a :< f) = substitute subst a :< fmap (substitute subst) f
