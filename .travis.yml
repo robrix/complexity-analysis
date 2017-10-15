@@ -24,7 +24,7 @@ before_install:
 
 install:
  - cabal --version
- - cabal new-build --only-dependencies
+ - cabal new-build --enable-tests --only-dependencies
 
 script:
  - cabal new-build --enable-tests
