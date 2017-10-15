@@ -13,6 +13,14 @@ import Data.Semigroup
 import GHC.Generics
 import Text.Show
 
+-- $setup
+-- >>> :set -XFlexibleContexts
+-- >>> :set -XDeriveGeneric
+-- >>> import Test.QuickCheck
+-- >>> data List a = Cons a (List a) | Nil deriving (Eq, Generic1, Ord, Show)
+-- >>> instance Show1 List where liftShowsPrec = genericLiftShowsPrec
+-- >>> instance Arbitrary a => Arbitrary (List a) where arbitrary = foldr Cons Nil <$> arbitrary
+
 -- | Generically-derivable lifting of the 'Eq' class to unary type constructors.
 class GEq1 f where
   -- | Lift an equality test through the type constructor.
@@ -40,6 +48,8 @@ genericLiftCompare f a b = gliftCompare f (from1 a) (from1 b)
 -- | Generically-derivable lifting of the 'Show' class to unary type constructors.
 class GShow1 f where
   -- | showsPrec function for an application of the type constructor based on showsPrec and showList functions for the argument type.
+  --
+  -- prop> \ a as -> genericLiftShowsPrec showsPrec showList 0 (Cons a as) "" == showsPrec 0 (Cons a as) ""
   gliftShowsPrec :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
 
 class GShow1Body f where
