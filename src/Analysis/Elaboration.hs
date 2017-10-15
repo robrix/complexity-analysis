@@ -15,11 +15,11 @@ import qualified Data.Set as Set
 import Data.Subst
 import Data.Type
 
-type Elab = StateT (Subst (PartialType Error)) (ReaderT (Env Name) (Fresh Name))
+type Elab = StateT (Subst PartialType) (ReaderT (Env Name) (Fresh Name))
 
-type PartialElabTerm = Cofree Expr (PartialType Error)
+type PartialElabTerm = Cofree Expr PartialType
 
-runElab :: Elab a -> (a, Subst (PartialType Error))
+runElab :: Elab a -> (a, Subst PartialType)
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
 elaborate :: Term -> Elab PartialElabTerm
@@ -57,14 +57,14 @@ elaborate (Fix (Snd pair)) = do
   pair' <- check pair (tvar t1 .* tvar t2)
   pure (tvar t2 :< Snd pair')
 
-check :: Term -> PartialType Error -> Elab (Cofree Expr (PartialType Error))
+check :: Term -> PartialType -> Elab PartialElabTerm
 check term ty = do
   term' <- elaborate term
   termTy <- unify (extract term') ty
   pure (termTy :< unwrap term')
 
 
-unify :: PartialType Error -> PartialType Error -> Elab (PartialType Error)
+unify :: PartialType -> PartialType -> Elab PartialType
 unify (Pure e1) _         = pure (Pure e1)
 unify _         (Pure e2) = pure (Pure e2)
 unify (Free t1) (Free t2)
@@ -75,7 +75,7 @@ unify (Free t1) (Free t2)
   | Bool       <- t1, Bool       <- t2 = pure bool
   | otherwise = pure (Pure (TypeMismatch t1 t2))
 
-bind :: Name -> Type (PartialType Error) -> Elab (PartialType Error)
+bind :: Name -> Type PartialType -> Elab PartialType
 bind name ty
   | TVar name' <- ty, name == name'        = pure (wrap ty)
   | Set.member name (freeTypeVariables ty) = pure (Pure (InfiniteType name ty))

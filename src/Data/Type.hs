@@ -28,44 +28,44 @@ instance Show1 Type where liftShowsPrec = genericLiftShowsPrec
 
 data Error
   = FreeVariable Name
-  | TypeMismatch (Type (PartialType Error)) (Type (PartialType Error))
-  | InfiniteType Name (Type (PartialType Error))
+  | TypeMismatch (Type PartialType) (Type PartialType)
+  | InfiniteType Name (Type PartialType)
   deriving (Eq, Ord, Read, Show)
 
-type PartialType = Free Type
+type PartialType = Free Type Error
 type TotalType = Fix Type
 
-totalToPartial :: TotalType -> PartialType a
+totalToPartial :: TotalType -> PartialType
 totalToPartial = cata wrap
 
-partialToTotal :: PartialType a -> Either [a] TotalType
+partialToTotal :: PartialType -> Either [Error] TotalType
 partialToTotal = iter (fmap Fix . sequenceA) . fmap (Left . pure)
 
 
-tvar :: Name -> PartialType a
+tvar :: Name -> PartialType
 tvar name = wrap (TVar name)
 
-makeForAll :: Name -> PartialType a -> PartialType a
+makeForAll :: Name -> PartialType -> PartialType
 makeForAll name body = wrap (ForAll name body)
 
-(.->) :: PartialType a -> PartialType a -> PartialType a
+(.->) :: PartialType -> PartialType -> PartialType
 arg .-> ret = wrap (arg :-> ret)
 
 infixr 0 .->
 
-(.*) :: PartialType a -> PartialType a -> PartialType a
+(.*) :: PartialType -> PartialType -> PartialType
 fst .* snd = wrap (fst :* snd)
 
 infixl 7 .*
 
-bool :: PartialType a
+bool :: PartialType
 bool = wrap Bool
 
 
 class FreeTypeVariables t where
   freeTypeVariables :: t -> Set.Set Name
 
-instance FreeTypeVariables (PartialType a) where
+instance FreeTypeVariables PartialType where
   freeTypeVariables = iter freeTypeVariables . (Set.empty <$)
 
 instance FreeTypeVariables t => FreeTypeVariables (Type t) where
@@ -84,14 +84,14 @@ substType subst (arg :-> ret)      = Left (substitute subst arg :-> substitute s
 substType subst (fst :* snd)       = Left (substitute subst fst :* substitute subst snd)
 substType _     Bool               = Left Bool
 
-instance Binder (PartialType a) a => Binder (PartialType a) (PartialType a) where
+instance Binder PartialType PartialType where
   substitute subst (Free t) = either wrap id (substType subst t)
   substitute subst (Pure a) = Pure (substitute subst a)
 
-instance Binder (PartialType Error) Error where
+instance Binder PartialType Error where
   substitute _     (FreeVariable name)    = FreeVariable name
   substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
   substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
 
-instance Functor f => Binder (PartialType Error) (Cofree f (PartialType Error)) where
+instance Functor f => Binder PartialType (Cofree f PartialType) where
   substitute subst (a :< f) = substitute subst a :< fmap (substitute subst) f
