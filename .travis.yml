@@ -29,5 +29,3 @@ install:
 script:
  - cabal new-build --enable-tests
  - cabal new-test
-
-notifications: []
