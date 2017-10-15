@@ -48,6 +48,16 @@ tvar name = wrap (TVar name)
 makeForAll :: Name -> PartialType -> PartialType
 makeForAll name body = wrap (ForAll name body)
 
+forAll :: (PartialType -> PartialType) -> PartialType
+forAll hoas = makeForAll n body
+  where n = maybe (Name 0) succ (maxBoundVariable body)
+        body = hoas (tvar n)
+
+maxBoundVariable :: PartialType -> Maybe Name
+maxBoundVariable = iter (\ expr -> case expr of
+  ForAll name _ -> Just name
+  _             -> foldr max Nothing expr) . (Nothing <$)
+
 (.->) :: PartialType -> PartialType -> PartialType
 arg .-> ret = wrap (arg :-> ret)
 
