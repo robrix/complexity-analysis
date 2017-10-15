@@ -100,6 +100,9 @@ gliftShowList sp sl = showListWith (gliftShowsPrec sp sl 0)
 -- | A suitable implementation of Show1’s liftShowsPrec for Generic1 types.
 --
 -- prop> \ a -> genericLiftShowsPrec showsPrec showList 0 a "" == showsPrec 0 (asTree a) ""
+-- prop> \ a@Single{} -> genericLiftShowsPrec showsPrec showList 0 a "" == showsPrec 0 a ""
+-- prop> \ a@Double{} -> genericLiftShowsPrec showsPrec showList 0 a "" == showsPrec 0 a ""
+-- prop> \ a@Triple{} -> genericLiftShowsPrec showsPrec showList 0 a "" == showsPrec 0 a ""
 genericLiftShowsPrec :: (Generic1 f, GShow1 (Rep1 f)) => (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
 genericLiftShowsPrec sp sl d = gliftShowsPrec sp sl d . from1
 
