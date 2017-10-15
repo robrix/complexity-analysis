@@ -24,8 +24,10 @@ import Text.Show
 -- >>> instance Show1 Tree where liftShowsPrec = genericLiftShowsPrec
 -- >>> instance Arbitrary a => Arbitrary (Tree a) where arbitrary = oneof [ pure Empty, Leaf <$> arbitrary, (:$:) <$> arbitrary <*> arbitrary ]
 -- >>> let asTree tree = case tree of { _ :$: _ -> tree ; _ -> tree }
--- >>> data Triple a = Triple { one :: a, two :: a, three :: a } deriving (Eq, Generic1, Ord, Show)
--- >>> instance Arbitrary a => Arbitrary (Triple a) where arbitrary = Triple <$> arbitrary <*> arbitrary <*> arbitrary
+-- >>> :{
+-- data Triple a = Triple { one :: a, two :: a, three :: a } deriving (Eq, Generic1, Ord, Show)
+-- instance Arbitrary a => Arbitrary (Triple a) where arbitrary = Triple <$> arbitrary <*> arbitrary <*> arbitrary
+-- :}
 
 -- | Generically-derivable lifting of the 'Eq' class to unary type constructors.
 class GEq1 f where
