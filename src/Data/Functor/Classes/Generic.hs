@@ -31,6 +31,20 @@ import Text.Show
 -- :}
 --
 -- >>> :{
+-- data Single a = Single { only :: a }
+--   deriving (Eq, Generic1, Ord, Show)
+-- instance Arbitrary a => Arbitrary (Single a) where
+--   arbitrary = Single <$> arbitrary
+-- :}
+--
+-- >>> :{
+-- data Double a = Double { first :: a, second :: a }
+--   deriving (Eq, Generic1, Ord, Show)
+-- instance Arbitrary a => Arbitrary (Double a) where
+--   arbitrary = Double <$> arbitrary <*> arbitrary
+-- :}
+--
+-- >>> :{
 -- data Triple a = Triple { one :: a, two :: a, three :: a }
 --   deriving (Eq, Generic1, Ord, Show)
 -- instance Arbitrary a => Arbitrary (Triple a) where
