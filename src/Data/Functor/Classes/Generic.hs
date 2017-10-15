@@ -137,7 +137,7 @@ instance GShow1 f => GShow1Body (M1 S c f) where
 
 instance (GShow1 f, GShow1 g) => GShow1Body (f :*: g) where
   gliftShowsPrecBody fixity conName sp sl d (a :*: b) = case fixity of
-    Prefix       -> showsUnaryWith (gliftShowsPrec sp sl) conName d a
+    Prefix       -> showsBinaryWith (gliftShowsPrec sp sl) (gliftShowsPrec sp sl) conName d a b
     Infix _ prec -> showParen (d > prec) $ gliftShowsPrec sp sl (succ prec) a . showChar ' ' . showString conName . showChar ' ' . gliftShowsPrec sp sl (succ prec) b
 
 instance GShow1 f => GShow1 (M1 S c f) where
