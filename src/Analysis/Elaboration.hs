@@ -89,8 +89,9 @@ bind :: Name -> Type (PartialType Error) -> Elab (PartialType Error)
 bind name ty
   | TVar name' <- ty, name == name'        = pure (wrap ty)
   | Set.member name (freeTypeVariables ty) = pure (Pure (InfiniteType name ty))
-  | otherwise                              = modify (substExtend name (wrap ty)) >> pure (wrap ty)
-
+  | otherwise                              = do
+    subst <- get
+    maybe (modify (substExtend name (wrap ty)) >> pure (wrap ty)) (unify (wrap ty)) (substLookup name subst)
 
 instance Binder (PartialType Error) Error where
   substitute _     (FreeVariable name)    = FreeVariable name
