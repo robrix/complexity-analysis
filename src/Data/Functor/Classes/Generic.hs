@@ -49,8 +49,6 @@ genericLiftCompare f a b = gliftCompare f (from1 a) (from1 b)
 -- | Generically-derivable lifting of the 'Show' class to unary type constructors.
 class GShow1 f where
   -- | showsPrec function for an application of the type constructor based on showsPrec and showList functions for the argument type.
-  --
-  -- prop> \ a -> genericLiftShowsPrec showsPrec showList 0 a "" == showsPrec 0 (asTree a) ""
   gliftShowsPrec :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
 
 class GShow1Body f where
@@ -62,6 +60,8 @@ gliftShowList :: GShow1 f => (Int -> a -> ShowS) -> ([a] -> ShowS) -> [f a] -> S
 gliftShowList sp sl = showListWith (gliftShowsPrec sp sl 0)
 
 -- | A suitable implementation of Show1’s liftShowsPrec for Generic1 types.
+--
+-- prop> \ a -> genericLiftShowsPrec showsPrec showList 0 a "" == showsPrec 0 (asTree a) ""
 genericLiftShowsPrec :: (Generic1 f, GShow1 (Rep1 f)) => (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
 genericLiftShowsPrec sp sl d = gliftShowsPrec sp sl d . from1
 
