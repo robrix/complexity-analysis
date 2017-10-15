@@ -158,7 +158,7 @@ instance GShow1Body U1 where
   gliftShowsPrecBody _ _ conName _ _ _ _ = showString conName
 
 instance GShow1 f => GShow1Body (M1 S c f) where
-  gliftShowsPrecBody _ _ conName sp sl d (M1 a) = showsUnaryWith (gliftShowsPrec sp sl) conName d a
+  gliftShowsPrecBody _ conIsRecord conName sp sl d (M1 a) = showParen (d > 10) $ showString conName . showChar ' ' . showBraces conIsRecord (gliftShowsPrec sp sl d a)
 
 instance (GShow1 f, GShow1 g) => GShow1Body (f :*: g) where
   gliftShowsPrecBody conFixity conIsRecord conName sp sl d (a :*: b) = case conFixity of
