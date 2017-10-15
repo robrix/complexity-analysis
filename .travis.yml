@@ -29,11 +29,11 @@ before_install:
 
 install:
  - cabal --version
- - cabal new-build --enable-tests --only-dependencies
+ - cabal new-build --enable-tests --only-dependencies -j
 
 script:
- - cabal new-build --enable-tests
- - cabal new-test
+ - cabal new-build --enable-tests -j
+ - cabal new-test -j
 
 notifications:
   email: false
