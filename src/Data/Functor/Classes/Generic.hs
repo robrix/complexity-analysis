@@ -90,8 +90,8 @@ class GShow1 f => GShow1Body f where
   -- | showsPrec function for the body of an application of the type constructor based on showsPrec and showList functions for the argument type.
   gliftShowsPrecBody :: Fixity -> Bool -> String -> (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
 
-  gliftShowsPrecAll :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> [ShowS]
-  gliftShowsPrecAll sp sl d a = [gliftShowsPrec sp sl d a]
+  gliftShowsPrecAll :: Bool -> (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> [ShowS]
+  gliftShowsPrecAll _ sp sl d a = [gliftShowsPrec sp sl d a]
 
 
 -- | showList function for an application of the type constructor based on showsPrec and showList functions for the argument type. The default implementation using standard list syntax is correct for most types.
@@ -189,16 +189,18 @@ instance GShow1Body U1 where
   gliftShowsPrecBody _ _ conName _ _ _ _ = showString conName
 
 instance (Selector s, GShow1 f) => GShow1Body (M1 S s f) where
-  gliftShowsPrecBody _ conIsRecord conName sp sl d m = showParen (d > 10) $ showString conName . showChar ' ' . showBraces conIsRecord ((if null (selName m) then id else showString (selName m) . showString " = ") . gliftShowsPrec sp sl d (unM1 m))
+  gliftShowsPrecBody _ conIsRecord conName sp sl d m = showParen (d > 10) $ showString conName . showChar ' ' . showBraces conIsRecord (foldr (.) id (gliftShowsPrecAll conIsRecord sp sl 0 m))
+
+  gliftShowsPrecAll conIsRecord sp sl d m = [ (if conIsRecord && not (null (selName m)) then showString (selName m) . showString " = " else id) . gliftShowsPrec sp sl d (unM1 m) ]
 
 instance (GShow1Body f, GShow1Body g) => GShow1Body (f :*: g) where
   gliftShowsPrecBody conFixity conIsRecord conName sp sl d (a :*: b) = case conFixity of
     Prefix       -> showParen (d > 10) $ showString conName . showChar ' ' . if conIsRecord
-      then showBraces True (foldr (.) id (intersperse (showString ", ") (gliftShowsPrecAll sp sl 11 (a :*: b))))
-      else foldr (.) id (intersperse (showString " ") (gliftShowsPrecAll sp sl 11 (a :*: b)))
+      then showBraces True (foldr (.) id (intersperse (showString ", ") (gliftShowsPrecAll conIsRecord sp sl 11 (a :*: b))))
+      else foldr (.) id (intersperse (showString " ") (gliftShowsPrecAll conIsRecord sp sl 11 (a :*: b)))
     Infix _ prec -> showParen (d > prec) $ gliftShowsPrec sp sl (succ prec) a . showChar ' ' . showString conName . showChar ' ' . gliftShowsPrec sp sl (succ prec) b
 
-  gliftShowsPrecAll sp sl d (a :*: b) = gliftShowsPrecAll sp sl d a ++ gliftShowsPrecAll sp sl d b
+  gliftShowsPrecAll conIsRecord sp sl d (a :*: b) = gliftShowsPrecAll conIsRecord sp sl d a ++ gliftShowsPrecAll conIsRecord sp sl d b
 
 instance GShow1 f => GShow1 (M1 S c f) where
   gliftShowsPrec sp sl d (M1 a) = gliftShowsPrec sp sl d a
