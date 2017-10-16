@@ -75,6 +75,7 @@ unify (Free t1) (Free t2)
   | a1 :*  b1  <- t1, a2 :*  b2  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
   | Type.Unit  <- t1, Type.Unit  <- t2 = pure unitT
   | Type.Bool  <- t1, Type.Bool  <- t2 = pure boolT
+  | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
   | otherwise = pure (Pure (TypeMismatch t1 t2))
 
 bind :: Name -> Type PartialType -> Elab PartialType
