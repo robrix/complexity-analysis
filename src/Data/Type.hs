@@ -49,8 +49,8 @@ tvar name = wrap (TVar name)
 makeForAll :: Name -> PartialType -> PartialType
 makeForAll name body = wrap (ForAll name body)
 
-forAll :: (PartialType -> PartialType) -> PartialType
-forAll hoas = makeForAll n body
+forAllT :: (PartialType -> PartialType) -> PartialType
+forAllT hoas = makeForAll n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (tvar n)
 
@@ -69,14 +69,14 @@ fst .* snd = wrap (fst :* snd)
 
 infixl 7 .*
 
-unit :: PartialType
-unit = wrap Unit
+unitT :: PartialType
+unitT = wrap Unit
 
-tuple :: [PartialType] -> PartialType
-tuple = foldr (.*) unit
+tupleT :: [PartialType] -> PartialType
+tupleT = foldr (.*) unitT
 
-bool :: PartialType
-bool = wrap Bool
+boolT :: PartialType
+boolT = wrap Bool
 
 
 class FreeTypeVariables t where

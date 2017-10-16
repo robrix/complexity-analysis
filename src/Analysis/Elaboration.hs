@@ -35,9 +35,9 @@ elaborate (Fix (App f a)) = do
 elaborate (Fix (Var name)) = do
   env <- ask
   pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env) :< Var name)
-elaborate (Fix (Lit b)) = pure (bool :< Lit b)
+elaborate (Fix (Lit b)) = pure (boolT :< Lit b)
 elaborate (Fix (If c t e)) = do
-  c' <- check c bool
+  c' <- check c boolT
   t' <- elaborate t
   e' <- elaborate e
   result <- unify (extract t') (extract e')
@@ -72,7 +72,7 @@ unify (Free t1) (Free t2)
   |                   TVar name2 <- t2 = bind name2 t1
   | a1 :-> b1  <- t1, a2 :-> b2  <- t2 = (.->) <$> unify a1 a2 <*> unify b1 b2
   | a1 :*  b1  <- t1, a2 :*  b2  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
-  | Bool       <- t1, Bool       <- t2 = pure bool
+  | Bool       <- t1, Bool       <- t2 = pure boolT
   | otherwise = pure (Pure (TypeMismatch t1 t2))
 
 bind :: Name -> Type PartialType -> Elab PartialType
