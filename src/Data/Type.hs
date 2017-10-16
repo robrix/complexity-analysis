@@ -69,6 +69,9 @@ fst .* snd = wrap (fst :* snd)
 
 infixl 7 .*
 
+unit :: PartialType
+unit = wrap Unit
+
 bool :: PartialType
 bool = wrap Bool
 
