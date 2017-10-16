@@ -18,6 +18,7 @@ data Type a
   | Unit
   | a :* a
   | Bool
+  | List a
   deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
 
 infixr 0 :->
@@ -78,6 +79,9 @@ tupleT = foldr (.*) unitT
 boolT :: PartialType
 boolT = wrap Bool
 
+listT :: PartialType -> PartialType
+listT = wrap . List
+
 
 class FreeTypeVariables t where
   freeTypeVariables :: t -> Set.Set Name
@@ -98,9 +102,10 @@ substType :: Binder a a => Subst a -> Type a -> Either (Type a) a
 substType subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup name subst)
 substType subst (ForAll name body) = Left (ForAll name (substitute (substDelete name subst) body))
 substType subst (arg :-> ret)      = Left (substitute subst arg :-> substitute subst ret)
-substType subst (fst :* snd)       = Left (substitute subst fst :* substitute subst snd)
 substType _     Unit               = Left Unit
+substType subst (fst :* snd)       = Left (substitute subst fst :* substitute subst snd)
 substType _     Bool               = Left Bool
+substType subst (List a)           = Left (List (substitute subst a))
 
 instance Binder PartialType PartialType where
   substitute subst (Free t) = either wrap id (substType subst t)

@@ -36,13 +36,6 @@ elaborate (Fix (Var name)) = do
   env <- ask
   pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env) :< Var name)
 elaborate (Fix Expr.Unit) = pure (unitT :< Expr.Unit)
-elaborate (Fix (Expr.Bool b)) = pure (boolT :< Expr.Bool b)
-elaborate (Fix (If c t e)) = do
-  c' <- check c boolT
-  t' <- elaborate t
-  e' <- elaborate e
-  result <- unify (extract t') (extract e')
-  pure (result :< If c' t' e')
 elaborate (Fix (Pair fst snd)) = do
   fst' <- elaborate fst
   snd' <- elaborate snd
@@ -57,6 +50,19 @@ elaborate (Fix (Snd pair)) = do
   t2 <- fresh
   pair' <- check pair (tvar t1 .* tvar t2)
   pure (tvar t2 :< Snd pair')
+elaborate (Fix (Expr.Bool b)) = pure (boolT :< Expr.Bool b)
+elaborate (Fix (If c t e)) = do
+  c' <- check c boolT
+  t' <- elaborate t
+  e' <- elaborate e
+  result <- unify (extract t') (extract e')
+  pure (result :< If c' t' e')
+elaborate (Fix (Cons h t)) = do
+  a <- fresh
+  h' <- check h (tvar a)
+  t' <- check t (listT (tvar a))
+  pure (listT (tvar a) :< Cons h' t')
+elaborate (Fix Nil) = (:< Nil) . listT . tvar <$> fresh
 
 check :: Term -> PartialType -> Elab PartialElabTerm
 check term ty = do
@@ -75,6 +81,7 @@ unify (Free t1) (Free t2)
   | a1 :*  b1  <- t1, a2 :*  b2  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
   | Type.Unit  <- t1, Type.Unit  <- t2 = pure unitT
   | Type.Bool  <- t1, Type.Bool  <- t2 = pure boolT
+  | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
   | otherwise = pure (Pure (TypeMismatch t1 t2))
 
 bind :: Name -> Type PartialType -> Elab PartialType
