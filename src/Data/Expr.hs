@@ -81,3 +81,6 @@ cons head tail = Fix (Cons head tail)
 
 nil :: Term
 nil = Fix Nil
+
+list :: [Term] -> Term
+list = foldr cons nil
