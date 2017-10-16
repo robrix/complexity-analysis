@@ -53,6 +53,9 @@ infixl 9 #
 var :: Name -> Term
 var name = Fix (Var name)
 
+unit :: Term
+unit = Fix Unit
+
 bool :: Bool -> Term
 bool b = Fix (Bool b)
 
