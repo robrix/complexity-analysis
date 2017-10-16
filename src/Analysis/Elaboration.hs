@@ -96,4 +96,5 @@ bind name ty
   | Set.member name (freeTypeVariables ty) = pure (Pure (InfiniteType name ty))
   | otherwise                              = do
     subst <- get
-    maybe (modify (substExtend name (wrap ty)) >> pure (wrap ty)) (unify (wrap ty)) (substLookup name subst)
+    let ty' = substitute subst (wrap ty)
+    maybe (put (substExtend name ty' subst) >> pure ty') (unify ty') (substLookup name subst)
