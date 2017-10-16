@@ -11,11 +11,11 @@ data Expr a
   | App a a
   | Var Name
   | Unit
-  | Bool Bool
-  | If a a a
   | Pair a a
   | Fst a
   | Snd a
+  | Bool Bool
+  | If a a a
   deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
 
 instance Eq1 Expr where liftEq = genericLiftEq
@@ -56,12 +56,6 @@ var name = Fix (Var name)
 unit :: Term
 unit = Fix Unit
 
-bool :: Bool -> Term
-bool b = Fix (Bool b)
-
-iff :: Term -> Term -> Term -> Term
-iff c t e = Fix (If c t e)
-
 pair :: Term -> Term -> Term
 pair fst snd = Fix (Pair fst snd)
 
@@ -70,3 +64,9 @@ pfst pair = Fix (Fst pair)
 
 psnd :: Term -> Term
 psnd pair = Fix (Snd pair)
+
+bool :: Bool -> Term
+bool b = Fix (Bool b)
+
+iff :: Term -> Term -> Term -> Term
+iff c t e = Fix (If c t e)
