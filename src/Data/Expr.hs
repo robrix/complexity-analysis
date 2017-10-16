@@ -59,6 +59,9 @@ unit = Fix Unit
 pair :: Term -> Term -> Term
 pair fst snd = Fix (Pair fst snd)
 
+tuple :: [Term] -> Term
+tuple = foldr pair unit
+
 pfst :: Term -> Term
 pfst pair = Fix (Fst pair)
 
