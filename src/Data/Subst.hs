@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, MultiParamTypeClasses, UndecidableInstances #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
 module Data.Subst where
 
 import Data.Bifunctor (second)
@@ -32,3 +32,6 @@ substExtend name value = (<> substSingleton name value)
 
 class Binder ty value where
   substitute :: Subst ty -> value -> value
+
+instance Binder ty ty => Binder ty (Subst ty) where
+  substitute subst = Subst . map (second (substitute subst)) . getSubst
