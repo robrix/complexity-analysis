@@ -27,7 +27,7 @@ substSingleton :: Name -> value -> Subst value
 substSingleton name value = Subst [(name, value)]
 
 substExtend :: Binder value value => Name -> value -> Subst value -> Subst value
-substExtend name value = (<> substSingleton name value)
+substExtend name value = (substSingleton name value <>)
 
 
 class Binder ty value where
