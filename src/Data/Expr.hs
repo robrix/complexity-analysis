@@ -10,7 +10,7 @@ data Expr a
   = Abs Name a
   | App a a
   | Var Name
-  | Lit Bool
+  | Bool Bool
   | If a a a
   | Pair a a
   | Fst a
@@ -53,7 +53,7 @@ var :: Name -> Term
 var name = Fix (Var name)
 
 bool :: Bool -> Term
-bool b = Fix (Lit b)
+bool b = Fix (Bool b)
 
 iff :: Term -> Term -> Term -> Term
 iff c t e = Fix (If c t e)

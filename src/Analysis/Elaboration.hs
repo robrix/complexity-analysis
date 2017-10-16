@@ -8,12 +8,12 @@ import Control.Monad.Fresh
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Env
-import Data.Expr
+import Data.Expr as Expr
 import Data.Functor.Foldable (Fix(..))
 import Data.Name
 import qualified Data.Set as Set
 import Data.Subst
-import Data.Type
+import Data.Type as Type
 
 type Elab = StateT (Subst PartialType) (ReaderT (Env Name) (Fresh Name))
 
@@ -35,7 +35,7 @@ elaborate (Fix (App f a)) = do
 elaborate (Fix (Var name)) = do
   env <- ask
   pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env) :< Var name)
-elaborate (Fix (Lit b)) = pure (boolT :< Lit b)
+elaborate (Fix (Expr.Bool b)) = pure (boolT :< Expr.Bool b)
 elaborate (Fix (If c t e)) = do
   c' <- check c boolT
   t' <- elaborate t
@@ -72,7 +72,7 @@ unify (Free t1) (Free t2)
   |                   TVar name2 <- t2 = bind name2 t1
   | a1 :-> b1  <- t1, a2 :-> b2  <- t2 = (.->) <$> unify a1 a2 <*> unify b1 b2
   | a1 :*  b1  <- t1, a2 :*  b2  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
-  | Bool       <- t1, Bool       <- t2 = pure boolT
+  | Type.Bool  <- t1, Type.Bool  <- t2 = pure boolT
   | otherwise = pure (Pure (TypeMismatch t1 t2))
 
 bind :: Name -> Type PartialType -> Elab PartialType
