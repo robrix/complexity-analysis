@@ -52,8 +52,8 @@ infixl 9 #
 var :: Name -> Term
 var name = Fix (Var name)
 
-lit :: Bool -> Term
-lit b = Fix (Lit b)
+bool :: Bool -> Term
+bool b = Fix (Lit b)
 
 iff :: Term -> Term -> Term -> Term
 iff c t e = Fix (If c t e)
