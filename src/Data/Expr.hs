@@ -16,6 +16,8 @@ data Expr a
   | Snd a
   | Bool Bool
   | If a a a
+  | Cons a a
+  | Nil
   deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
 
 instance Eq1 Expr where liftEq = genericLiftEq
@@ -73,3 +75,9 @@ bool b = Fix (Bool b)
 
 iff :: Term -> Term -> Term -> Term
 iff c t e = Fix (If c t e)
+
+cons :: Term -> Term -> Term
+cons head tail = Fix (Cons head tail)
+
+nil :: Term
+nil = Fix Nil

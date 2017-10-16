@@ -57,6 +57,12 @@ elaborate (Fix (If c t e)) = do
   e' <- elaborate e
   result <- unify (extract t') (extract e')
   pure (result :< If c' t' e')
+elaborate (Fix (Cons h t)) = do
+  a <- fresh
+  h' <- elaborate h
+  t' <- check t (listT (tvar a))
+  pure (listT (tvar a) :< Cons h' t')
+elaborate (Fix Nil) = (:< Nil) . listT . tvar <$> fresh
 
 check :: Term -> PartialType -> Elab PartialElabTerm
 check term ty = do
