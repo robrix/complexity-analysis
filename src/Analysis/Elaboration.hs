@@ -35,6 +35,7 @@ elaborate (Fix (App f a)) = do
 elaborate (Fix (Var name)) = do
   env <- ask
   pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env) :< Var name)
+elaborate (Fix Expr.Unit) = pure (unitT :< Expr.Unit)
 elaborate (Fix (Expr.Bool b)) = pure (boolT :< Expr.Bool b)
 elaborate (Fix (If c t e)) = do
   c' <- check c boolT

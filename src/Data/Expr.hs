@@ -10,6 +10,7 @@ data Expr a
   = Abs Name a
   | App a a
   | Var Name
+  | Unit
   | Bool Bool
   | If a a a
   | Pair a a
