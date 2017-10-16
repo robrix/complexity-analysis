@@ -59,7 +59,7 @@ elaborate (Fix (If c t e)) = do
   pure (result :< If c' t' e')
 elaborate (Fix (Cons h t)) = do
   a <- fresh
-  h' <- elaborate h
+  h' <- check h (tvar a)
   t' <- check t (listT (tvar a))
   pure (listT (tvar a) :< Cons h' t')
 elaborate (Fix Nil) = (:< Nil) . listT . tvar <$> fresh
