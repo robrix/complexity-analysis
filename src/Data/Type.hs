@@ -15,8 +15,8 @@ data Type a
   = TVar Name
   | ForAll Name a
   | a :-> a
-  | a :* a
   | Unit
+  | a :* a
   | Bool
   deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
 
@@ -64,13 +64,13 @@ arg .-> ret = wrap (arg :-> ret)
 
 infixr 0 .->
 
+unitT :: PartialType
+unitT = wrap Unit
+
 (.*) :: PartialType -> PartialType -> PartialType
 fst .* snd = wrap (fst :* snd)
 
 infixl 7 .*
-
-unitT :: PartialType
-unitT = wrap Unit
 
 tupleT :: [PartialType] -> PartialType
 tupleT = foldr (.*) unitT
