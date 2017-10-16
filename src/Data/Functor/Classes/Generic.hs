@@ -189,7 +189,7 @@ instance GShow1Body U1 where
   gliftShowsPrecBody _ _ conName _ _ _ _ = showString conName
 
 instance (Selector s, GShow1 f) => GShow1Body (M1 S s f) where
-  gliftShowsPrecBody _ conIsRecord conName sp sl d m = showParen (d > 10) $ showString conName . showChar ' ' . showBraces conIsRecord (foldr (.) id (gliftShowsPrecAll conIsRecord sp sl 0 m))
+  gliftShowsPrecBody _ conIsRecord conName sp sl d m = showParen (d > 10) $ showString conName . showChar ' ' . showBraces conIsRecord (foldr (.) id (gliftShowsPrecAll conIsRecord sp sl 11 m))
 
   gliftShowsPrecAll conIsRecord sp sl d m = [ (if conIsRecord && not (null (selName m)) then showString (selName m) . showString " = " else id) . gliftShowsPrec sp sl (if conIsRecord then 0 else d) (unM1 m) ]
 
