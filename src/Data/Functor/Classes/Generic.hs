@@ -191,7 +191,7 @@ instance GShow1Body U1 where
 instance (Selector s, GShow1 f) => GShow1Body (M1 S s f) where
   gliftShowsPrecBody _ conIsRecord conName sp sl d m = showParen (d > 10) $ showString conName . showChar ' ' . showBraces conIsRecord (foldr (.) id (gliftShowsPrecAll conIsRecord sp sl 0 m))
 
-  gliftShowsPrecAll conIsRecord sp sl d m = [ (if conIsRecord && not (null (selName m)) then showString (selName m) . showString " = " else id) . gliftShowsPrec sp sl d (unM1 m) ]
+  gliftShowsPrecAll conIsRecord sp sl d m = [ (if conIsRecord && not (null (selName m)) then showString (selName m) . showString " = " else id) . gliftShowsPrec sp sl (if conIsRecord then 0 else d) (unM1 m) ]
 
 instance (GShow1Body f, GShow1Body g) => GShow1Body (f :*: g) where
   gliftShowsPrecBody conFixity conIsRecord conName sp sl d (a :*: b) = case conFixity of
