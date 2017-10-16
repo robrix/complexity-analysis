@@ -36,13 +36,6 @@ elaborate (Fix (Var name)) = do
   env <- ask
   pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env) :< Var name)
 elaborate (Fix Expr.Unit) = pure (unitT :< Expr.Unit)
-elaborate (Fix (Expr.Bool b)) = pure (boolT :< Expr.Bool b)
-elaborate (Fix (If c t e)) = do
-  c' <- check c boolT
-  t' <- elaborate t
-  e' <- elaborate e
-  result <- unify (extract t') (extract e')
-  pure (result :< If c' t' e')
 elaborate (Fix (Pair fst snd)) = do
   fst' <- elaborate fst
   snd' <- elaborate snd
@@ -57,6 +50,13 @@ elaborate (Fix (Snd pair)) = do
   t2 <- fresh
   pair' <- check pair (tvar t1 .* tvar t2)
   pure (tvar t2 :< Snd pair')
+elaborate (Fix (Expr.Bool b)) = pure (boolT :< Expr.Bool b)
+elaborate (Fix (If c t e)) = do
+  c' <- check c boolT
+  t' <- elaborate t
+  e' <- elaborate e
+  result <- unify (extract t') (extract e')
+  pure (result :< If c' t' e')
 
 check :: Term -> PartialType -> Elab PartialElabTerm
 check term ty = do
