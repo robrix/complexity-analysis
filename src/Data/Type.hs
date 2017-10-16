@@ -16,6 +16,7 @@ data Type a
   | ForAll Name a
   | a :-> a
   | a :* a
+  | Unit
   | Bool
   deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
 
@@ -92,6 +93,7 @@ substType subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup
 substType subst (ForAll name body) = Left (ForAll name (substitute (substDelete name subst) body))
 substType subst (arg :-> ret)      = Left (substitute subst arg :-> substitute subst ret)
 substType subst (fst :* snd)       = Left (substitute subst fst :* substitute subst snd)
+substType _     Unit               = Left Unit
 substType _     Bool               = Left Bool
 
 instance Binder PartialType PartialType where
