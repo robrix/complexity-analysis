@@ -15,6 +15,7 @@ data Type a
   = TVar Name
   | ForAll Name a
   | a :-> a
+  | Unit
   | a :* a
   | Bool
   deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
@@ -48,8 +49,8 @@ tvar name = wrap (TVar name)
 makeForAll :: Name -> PartialType -> PartialType
 makeForAll name body = wrap (ForAll name body)
 
-forAll :: (PartialType -> PartialType) -> PartialType
-forAll hoas = makeForAll n body
+forAllT :: (PartialType -> PartialType) -> PartialType
+forAllT hoas = makeForAll n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (tvar n)
 
@@ -63,13 +64,19 @@ arg .-> ret = wrap (arg :-> ret)
 
 infixr 0 .->
 
+unitT :: PartialType
+unitT = wrap Unit
+
 (.*) :: PartialType -> PartialType -> PartialType
 fst .* snd = wrap (fst :* snd)
 
 infixl 7 .*
 
-bool :: PartialType
-bool = wrap Bool
+tupleT :: [PartialType] -> PartialType
+tupleT = foldr (.*) unitT
+
+boolT :: PartialType
+boolT = wrap Bool
 
 
 class FreeTypeVariables t where
@@ -92,6 +99,7 @@ substType subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup
 substType subst (ForAll name body) = Left (ForAll name (substitute (substDelete name subst) body))
 substType subst (arg :-> ret)      = Left (substitute subst arg :-> substitute subst ret)
 substType subst (fst :* snd)       = Left (substitute subst fst :* substitute subst snd)
+substType _     Unit               = Left Unit
 substType _     Bool               = Left Bool
 
 instance Binder PartialType PartialType where

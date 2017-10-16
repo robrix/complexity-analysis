@@ -10,11 +10,12 @@ data Expr a
   = Abs Name a
   | App a a
   | Var Name
-  | Lit Bool
-  | If a a a
+  | Unit
   | Pair a a
   | Fst a
   | Snd a
+  | Bool Bool
+  | If a a a
   deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
 
 instance Eq1 Expr where liftEq = genericLiftEq
@@ -52,17 +53,23 @@ infixl 9 #
 var :: Name -> Term
 var name = Fix (Var name)
 
-lit :: Bool -> Term
-lit b = Fix (Lit b)
-
-iff :: Term -> Term -> Term -> Term
-iff c t e = Fix (If c t e)
+unit :: Term
+unit = Fix Unit
 
 pair :: Term -> Term -> Term
 pair fst snd = Fix (Pair fst snd)
+
+tuple :: [Term] -> Term
+tuple = foldr pair unit
 
 pfst :: Term -> Term
 pfst pair = Fix (Fst pair)
 
 psnd :: Term -> Term
 psnd pair = Fix (Snd pair)
+
+bool :: Bool -> Term
+bool b = Fix (Bool b)
+
+iff :: Term -> Term -> Term -> Term
+iff c t e = Fix (If c t e)
