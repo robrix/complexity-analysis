@@ -72,6 +72,9 @@ infixl 7 .*
 unit :: PartialType
 unit = wrap Unit
 
+tuple :: [PartialType] -> PartialType
+tuple = foldr (.*) unit
+
 bool :: PartialType
 bool = wrap Bool
 
