@@ -67,6 +67,7 @@ instance Monoid a => Semiring [a] where
   as >< bs = mappend <$> as <*> bs
 
 
+-- | A 'Semiring' over a 'Num' instance.
 newtype Arith a = Arith { getArith :: a }
   deriving (Bounded, Eq, Num, Ord, Read, Show)
 
