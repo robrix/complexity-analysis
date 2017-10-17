@@ -12,6 +12,38 @@ import Data.Semigroup
 zero :: Monoid m => m
 zero = mempty
 
+-- | A 'Semiring' is an abstract algebraic structure consisting of two associative operations, '(<>)' and '(><)', and their identities, 'zero' and 'one' respectively, with the additional constraints that '(><)' distributes over '(<>)' and that 'zero' is the annihilator for '(><)'.
+--
+--   Laws:
+--
+--   The 'Semigroup' laws (associativity of '(<>)' & equality of '(<>)' and 'mappend'):
+--
+--   > a <> (b <> c) = (a <> b) <> c
+--   > (<>) = mappend
+--
+--   The 'Monoid' laws ('zero' is the left- and right-identity of '(<>)'):
+--
+--   > zero <> a = a
+--   > a <> zero = a
+--
+--   'one' is the left- and right-identity of '(><)':
+--
+--   > one >< a = a
+--   > a >< one = a
+--
+--   '(><)' is associative:
+--
+--   > a >< (b >< c) = (a >< b) >< c
+--
+--   '(><)' is left- and right-distributive over '(<>)':
+--
+--   > a >< (b <> c) = (a >< b) <> (a >< c)
+--   > (a <> b) >< c = (a >< c) <> (b >< c)
+--
+--   'zero' is the left- and right-annihilator of '(><)':
+--
+--   > zero >< a = zero
+--   > a >< zero = zero
 class (Semigroup m, Monoid m) => Semiring m where
   one :: m
 
