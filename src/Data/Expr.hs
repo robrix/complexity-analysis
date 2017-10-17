@@ -18,6 +18,7 @@ data Expr a
   | If a a a
   | Cons a a
   | Nil
+  | Unlist a a a
   deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
 
 instance Eq1 Expr where liftEq = genericLiftEq
@@ -84,3 +85,6 @@ nil = Fix Nil
 
 list :: [Term] -> Term
 list = foldr cons nil
+
+unlist :: Term -> Term -> Term -> Term
+unlist empty full list = Fix (Unlist empty full list)

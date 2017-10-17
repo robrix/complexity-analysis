@@ -63,6 +63,12 @@ elaborate (Fix (Cons h t)) = do
   t' <- check t (listT (tvar a))
   pure (listT (tvar a) :< Cons h' t')
 elaborate (Fix Nil) = (:< Nil) . listT . tvar <$> fresh
+elaborate (Fix (Unlist empty full list)) = do
+  a <- fresh
+  empty' <- elaborate empty
+  full' <- check full (tvar a .-> listT (tvar a) .-> extract empty')
+  list' <- check list (listT (tvar a))
+  pure (extract empty' :< Unlist empty' full' list')
 
 check :: Term -> PartialType -> Elab PartialElabTerm
 check term ty = do
@@ -90,4 +96,5 @@ bind name ty
   | Set.member name (freeTypeVariables ty) = pure (Pure (InfiniteType name ty))
   | otherwise                              = do
     subst <- get
-    maybe (modify (substExtend name (wrap ty)) >> pure (wrap ty)) (unify (wrap ty)) (substLookup name subst)
+    let ty' = substitute subst (wrap ty)
+    maybe (put (substExtend name ty' subst) >> pure ty') (unify ty') (substLookup name subst)
