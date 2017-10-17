@@ -16,7 +16,7 @@ import qualified Data.Set as Set
 import Data.Subst
 import Data.Type as Type
 
-type Elab = StateT (Subst PartialType) (ReaderT (Env Name) (Fresh Name))
+type Elab = StateT (Subst PartialType) (ReaderT (Env Name) Fresh)
 
 type PartialElabTerm = Cofree Expr PartialType
 
