@@ -65,6 +65,8 @@ maxBoundVariable = iter (\ expr -> case expr of
 --
 -- >>> generalize unitT
 -- Free Unit
+--
+-- prop> \ v -> generalize (tvar v .-> tvar v) == forAllT (\ t -> t .-> t)
 generalize :: PartialType -> PartialType
 generalize ty = foldr (\ v ty -> forAllT (\ new -> substitute (substSingleton v new) ty)) ty (Set.toList (freeTypeVariables ty))
 
@@ -120,3 +122,7 @@ instance Substitutable PartialType Error where
 
 instance Functor f => Substitutable PartialType (Cofree f PartialType) where
   substitute subst (a :< f) = substitute subst a :< fmap (substitute subst) f
+
+-- $setup
+-- >>> import Test.QuickCheck
+-- >>> instance Arbitrary Name where arbitrary = Name <$> arbitrary
