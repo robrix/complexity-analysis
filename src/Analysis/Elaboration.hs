@@ -76,6 +76,9 @@ elabCheck term ty = do
   termTy <- unify (extract term') ty
   pure (termTy :< unwrap term')
 
+elab :: Term -> Elab PartialElabTerm
+elab = cata (\ term -> (:<) <$> checkAlgebra (fmap extract <$> term) <*> sequenceA term)
+
 check :: Term -> Maybe PartialType -> Elab PartialType
 check term ty = cata checkAlgebra term >>= maybe return unify ty
 
