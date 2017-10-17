@@ -61,6 +61,7 @@ instance Semiring () where
   (><) = (<>)
 
 
+-- | The multiplicative 'Monoid' taken from a 'Semiring'
 newtype Mult a = Mult { getMult :: a }
   deriving (Bounded, Eq, Ord, Read, Show)
 
