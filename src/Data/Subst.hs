@@ -9,7 +9,7 @@ newtype Subst value = Subst { getSubst :: [(Name, value)] }
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
 instance Substitutable value value => Semigroup (Subst value) where
-  s1 <> s2 = Subst (getSubst s1 ++ getSubst (substitute s1 (foldr substDelete s2 (map fst (getSubst s1)))))
+  s1 <> s2 = Subst (getSubst s1 ++ getSubst (substitute s1 s2))
 
 instance Substitutable value value => Monoid (Subst value) where
   mempty = Subst []
@@ -35,4 +35,5 @@ class Substitutable ty value where
   substitute :: Subst ty -> value -> value
 
 instance Substitutable ty ty => Substitutable ty (Subst ty) where
-  substitute subst = Subst . map (second (substitute subst)) . getSubst
+  substitute subst = Subst . map (second (substitute subst)) . filter (flip notElem vars . fst) . getSubst
+    where vars = substVars subst
