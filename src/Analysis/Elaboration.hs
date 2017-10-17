@@ -9,7 +9,7 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Data.Env
 import Data.Expr as Expr
-import Data.Functor.Foldable (Fix(..), cata)
+import Data.Functor.Foldable (Fix(..))
 import Data.Name
 import qualified Data.Set as Set
 import Data.Subst
@@ -75,59 +75,6 @@ elabCheck term ty = do
   term' <- elaborate term
   termTy <- unify (extract term') ty
   pure (termTy :< unwrap term')
-
-elab :: Term -> Elab PartialElabTerm
-elab = cata (\ term -> (:<) <$> checkAlgebra (fmap extract <$> term) <*> sequenceA term)
-
-check :: Term -> Maybe PartialType -> Elab PartialType
-check term ty = cata checkAlgebra term >>= maybe return unify ty
-
-checkAlgebra :: Expr (Elab PartialType) -> Elab PartialType
-checkAlgebra (Abs n b) = do
-  t <- fresh
-  b' <- local (envExtend n t) b
-  pure (tvar t .-> b')
-checkAlgebra (App f a) = do
-  t <- fresh
-  a' <- a
-  _ <- f >>= unify (a' .-> tvar t)
-  pure (tvar t)
-checkAlgebra (Var name) = do
-  env <- ask
-  pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env))
-checkAlgebra Expr.Unit = pure unitT
-checkAlgebra (Pair fst snd) = do
-  fst' <- fst
-  snd' <- snd
-  pure (fst' .* snd')
-checkAlgebra (Fst pair) = do
-  t1 <- fresh
-  t2 <- fresh
-  _ <- pair >>= unify (tvar t1 .* tvar t2)
-  pure (tvar t1)
-checkAlgebra (Snd pair) = do
-  t1 <- fresh
-  t2 <- fresh
-  _ <- pair >>= unify (tvar t1 .* tvar t2)
-  pure (tvar t2)
-checkAlgebra (Expr.Bool _) = pure boolT
-checkAlgebra (If c t e) = do
-  _ <- c >>= unify boolT
-  t' <- t
-  e' <- e
-  unify t' e'
-checkAlgebra (Cons h t) = do
-  a <- fresh
-  _ <- h >>= unify (tvar a)
-  _ <- t >>= unify (listT (tvar a))
-  pure (listT (tvar a))
-checkAlgebra Nil = listT . tvar <$> fresh
-checkAlgebra (Unlist empty full list) = do
-  a <- fresh
-  empty' <- empty
-  _ <- full >>= unify (tvar a .-> listT (tvar a) .-> empty')
-  _ <- list >>= unify (listT (tvar a))
-  pure empty'
 
 
 unify :: PartialType -> PartialType -> Elab PartialType
