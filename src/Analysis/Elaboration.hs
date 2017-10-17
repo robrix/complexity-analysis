@@ -63,12 +63,12 @@ elaborate (Fix (Cons h t)) = do
   t' <- check t (listT (tvar a))
   pure (listT (tvar a) :< Cons h' t')
 elaborate (Fix Nil) = (:< Nil) . listT . tvar <$> fresh
-elaborate (Fix (Uncons empty full list)) = do
+elaborate (Fix (Unlist empty full list)) = do
   a <- fresh
   empty' <- elaborate empty
   full' <- check full (tvar a .-> listT (tvar a) .-> extract empty')
   list' <- check list (listT (tvar a))
-  pure (extract empty' :< Uncons empty' full' list')
+  pure (extract empty' :< Unlist empty' full' list')
 
 check :: Term -> PartialType -> Elab PartialElabTerm
 check term ty = do
