@@ -10,6 +10,7 @@ data Expr a
   = Abs Name a
   | Var Name
   | App a a
+  | Rec Name a
   | Unit
   | Pair a a
   | Fst a
@@ -55,6 +56,16 @@ var name = Fix (Var name)
 func # arg = Fix (App func arg)
 
 infixl 9 #
+
+
+makeRec :: Name -> Term -> Term
+makeRec name body = Fix (Rec name body)
+
+rec :: (Term -> Term) -> Term
+rec hoas = makeRec n body
+  where n = maybe (Name 0) succ (maxBoundVariable body)
+        body = hoas (var n)
+
 
 unit :: Term
 unit = Fix Unit

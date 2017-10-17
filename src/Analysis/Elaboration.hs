@@ -35,6 +35,9 @@ elaborate (Fix (App f a)) = do
   a' <- elaborate a
   f' <- check f (extract a' .-> tvar t)
   pure (tvar t :< App f' a')
+elaborate (Fix (Rec n b)) = do
+  t <- fresh
+  local (envExtend n t) (elaborate b)
 elaborate (Fix Expr.Unit) = pure (unitT :< Expr.Unit)
 elaborate (Fix (Pair fst snd)) = do
   fst' <- elaborate fst
