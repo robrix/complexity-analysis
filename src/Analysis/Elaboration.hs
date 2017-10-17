@@ -9,7 +9,7 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Data.Env
 import Data.Expr as Expr
-import Data.Functor.Foldable (Fix(..))
+import Data.Functor.Foldable (Fix(..), cata)
 import Data.Name
 import qualified Data.Set as Set
 import Data.Subst
@@ -77,52 +77,7 @@ elabCheck term ty = do
   pure (termTy :< unwrap term')
 
 check :: Term -> Maybe PartialType -> Elab PartialType
-check term (Just ty) = check term Nothing >>= unify ty
-check (Fix (Abs n b)) Nothing = do
-  t <- fresh
-  b' <- local (envExtend n t) (check b Nothing)
-  pure (tvar t .-> b')
-check (Fix (App f a)) Nothing = do
-  t <- fresh
-  a' <- check a Nothing
-  _ <- check f (Just (a' .-> tvar t))
-  pure (tvar t)
-check (Fix (Var name)) Nothing = do
-  env <- ask
-  pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env))
-check (Fix Expr.Unit) Nothing = pure unitT
-check (Fix (Pair fst snd)) Nothing = do
-  fst' <- check fst Nothing
-  snd' <- check snd Nothing
-  pure (fst' .* snd')
-check (Fix (Fst pair)) Nothing = do
-  t1 <- fresh
-  t2 <- fresh
-  _ <- check pair (Just (tvar t1 .* tvar t2))
-  pure (tvar t1)
-check (Fix (Snd pair)) Nothing = do
-  t1 <- fresh
-  t2 <- fresh
-  _ <- check pair (Just (tvar t1 .* tvar t2))
-  pure (tvar t2)
-check (Fix (Expr.Bool _)) Nothing = pure boolT
-check (Fix (If c t e)) Nothing = do
-  _ <- check c (Just boolT)
-  t' <- check t Nothing
-  e' <- check e Nothing
-  unify t' e'
-check (Fix (Cons h t)) Nothing = do
-  a <- fresh
-  _ <- check h (Just (tvar a))
-  _ <- check t (Just (listT (tvar a)))
-  pure (listT (tvar a))
-check (Fix Nil) Nothing = listT . tvar <$> fresh
-check (Fix (Unlist empty full list)) Nothing = do
-  a <- fresh
-  empty' <- check empty Nothing
-  _ <- check full (Just (tvar a .-> listT (tvar a) .-> empty'))
-  _ <- check list (Just (listT (tvar a)))
-  pure empty'
+check = cata checkAlgebra
 
 checkAlgebra :: Expr (Maybe PartialType -> Elab PartialType) -> Maybe PartialType -> Elab PartialType
 checkAlgebra term (Just ty) = checkAlgebra term Nothing >>= unify ty
