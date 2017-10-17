@@ -77,54 +77,53 @@ elabCheck term ty = do
   pure (termTy :< unwrap term')
 
 check :: Term -> Maybe PartialType -> Elab PartialType
-check = cata checkAlgebra
+check term ty = cata checkAlgebra term >>= maybe return unify ty
 
-checkAlgebra :: Expr (Maybe PartialType -> Elab PartialType) -> Maybe PartialType -> Elab PartialType
-checkAlgebra term (Just ty) = checkAlgebra term Nothing >>= unify ty
-checkAlgebra (Abs n b) Nothing = do
+checkAlgebra :: Expr (Elab PartialType) -> Elab PartialType
+checkAlgebra (Abs n b) = do
   t <- fresh
-  b' <- local (envExtend n t) (b Nothing)
+  b' <- local (envExtend n t) b
   pure (tvar t .-> b')
-checkAlgebra (App f a) Nothing = do
+checkAlgebra (App f a) = do
   t <- fresh
-  a' <- a Nothing
-  _ <- f (Just (a' .-> tvar t))
+  a' <- a
+  _ <- f >>= unify (a' .-> tvar t)
   pure (tvar t)
-checkAlgebra (Var name) Nothing = do
+checkAlgebra (Var name) = do
   env <- ask
   pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env))
-checkAlgebra Expr.Unit Nothing = pure unitT
-checkAlgebra (Pair fst snd) Nothing = do
-  fst' <- fst Nothing
-  snd' <- snd Nothing
+checkAlgebra Expr.Unit = pure unitT
+checkAlgebra (Pair fst snd) = do
+  fst' <- fst
+  snd' <- snd
   pure (fst' .* snd')
-checkAlgebra (Fst pair) Nothing = do
+checkAlgebra (Fst pair) = do
   t1 <- fresh
   t2 <- fresh
-  _ <- pair (Just (tvar t1 .* tvar t2))
+  _ <- pair >>= unify (tvar t1 .* tvar t2)
   pure (tvar t1)
-checkAlgebra (Snd pair) Nothing = do
+checkAlgebra (Snd pair) = do
   t1 <- fresh
   t2 <- fresh
-  _ <- pair (Just (tvar t1 .* tvar t2))
+  _ <- pair >>= unify (tvar t1 .* tvar t2)
   pure (tvar t2)
-checkAlgebra (Expr.Bool _) Nothing = pure boolT
-checkAlgebra (If c t e) Nothing = do
-  _ <- c (Just boolT)
-  t' <- t Nothing
-  e' <- e Nothing
+checkAlgebra (Expr.Bool _) = pure boolT
+checkAlgebra (If c t e) = do
+  _ <- c >>= unify boolT
+  t' <- t
+  e' <- e
   unify t' e'
-checkAlgebra (Cons h t) Nothing = do
+checkAlgebra (Cons h t) = do
   a <- fresh
-  _ <- h (Just (tvar a))
-  _ <- t (Just (listT (tvar a)))
+  _ <- h >>= unify (tvar a)
+  _ <- t >>= unify (listT (tvar a))
   pure (listT (tvar a))
-checkAlgebra Nil Nothing = listT . tvar <$> fresh
-checkAlgebra (Unlist empty full list) Nothing = do
+checkAlgebra Nil = listT . tvar <$> fresh
+checkAlgebra (Unlist empty full list) = do
   a <- fresh
-  empty' <- empty Nothing
-  _ <- full (Just (tvar a .-> listT (tvar a) .-> empty'))
-  _ <- list (Just (listT (tvar a)))
+  empty' <- empty
+  _ <- full >>= unify (tvar a .-> listT (tvar a) .-> empty')
+  _ <- list >>= unify (listT (tvar a))
   pure empty'
 
 
