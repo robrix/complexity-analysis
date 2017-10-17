@@ -83,18 +83,18 @@ listT :: PartialType -> PartialType
 listT = wrap . List
 
 
-class FreeTypeVariables t where
-  freeTypeVariables :: t -> Set.Set Name
+class FreeTypeVariables name t where
+  freeTypeVariables :: t -> Set.Set name
 
-instance FreeTypeVariables PartialType where
+instance FreeTypeVariables Name PartialType where
   freeTypeVariables = iter freeTypeVariables . (Set.empty <$)
 
-instance FreeTypeVariables t => FreeTypeVariables (Type t) where
+instance FreeTypeVariables Name t => FreeTypeVariables Name (Type t) where
   freeTypeVariables (TVar name)        = Set.singleton name
   freeTypeVariables (ForAll name body) = Set.delete name (freeTypeVariables body)
   freeTypeVariables ty                 = foldMap freeTypeVariables ty
 
-instance FreeTypeVariables (Set.Set Name) where
+instance FreeTypeVariables name (Set.Set name) where
   freeTypeVariables = id
 
 
