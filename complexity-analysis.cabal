@@ -13,6 +13,7 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Analysis.Elaboration
+                     , Analysis.Examples
                      , Control.Monad.Fresh
                      , Data.Complexity
                      , Data.Env
