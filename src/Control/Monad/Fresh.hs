@@ -4,8 +4,11 @@ module Control.Monad.Fresh where
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Bifunctor (first)
+import Data.FreeTypeVariables
 import Data.Functor.Identity
 import Data.Name
+import qualified Data.Set as Set
+import Data.Subst
 
 class Monad monad => MonadFresh monad where
   fresh :: monad Name
@@ -17,6 +20,10 @@ type Fresh = FreshT Identity
 
 runFresh :: Fresh result -> Name -> (result, Name)
 runFresh = fmap runIdentity . runFreshT
+
+
+refresh :: (FreeTypeVariables value, Substitutable ty value, MonadFresh monad) => (Name -> ty) -> value -> monad value
+refresh tvar value = traverse (\ name -> fresh >>= pure . (,) name . tvar) (Set.toList (freeTypeVariables value)) >>= pure . flip substitute value . Subst
 
 
 instance Functor monad => Functor (FreshT monad) where
