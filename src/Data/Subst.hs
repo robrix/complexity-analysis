@@ -27,6 +27,9 @@ substSingleton name value = Subst [(name, value)]
 substExtend :: Substitutable value value => Name -> value -> Subst value -> Subst value
 substExtend name value = (substSingleton name value <>)
 
+substVars :: Subst a -> [Name]
+substVars = map fst . getSubst
+
 
 class Substitutable ty value where
   substitute :: Subst ty -> value -> value
