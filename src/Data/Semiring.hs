@@ -6,6 +6,7 @@ module Data.Semiring
 -- Instances
 , Arith(..)
 , Mult(..)
+, Few(..)
 ) where
 
 import Data.Semigroup
@@ -65,6 +66,26 @@ instance Semiring () where
 instance Monoid a => Semiring [a] where
   one = [zero]
   as >< bs = mappend <$> as <*> bs
+
+
+data Few = Zero | One | More
+  deriving (Bounded, Enum, Eq, Ord, Read, Show)
+
+instance Semigroup Few where
+  Zero <> b = b
+  a <> Zero = a
+  _ <> _ = More
+
+instance Monoid Few where
+  mempty = Zero
+  mappend = (<>)
+
+instance Semiring Few where
+  one = One
+  Zero >< _ = Zero
+  _ >< Zero = Zero
+  One >< One = One
+  _ >< _ = More
 
 
 -- | A 'Semiring' over a 'Num' instance.
