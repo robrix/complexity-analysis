@@ -30,7 +30,7 @@ elaborate (Fix (Abs n b)) = do
 elaborate (Fix (App f a)) = do
   t <- fresh
   a' <- elaborate a
-  f' <- check f (extract a' .-> tvar t)
+  f' <- elabCheck f (extract a' .-> tvar t)
   pure (tvar t :< App f' a')
 elaborate (Fix (Var name)) = do
   env <- ask
@@ -43,35 +43,35 @@ elaborate (Fix (Pair fst snd)) = do
 elaborate (Fix (Fst pair)) = do
   t1 <- fresh
   t2 <- fresh
-  pair' <- check pair (tvar t1 .* tvar t2)
+  pair' <- elabCheck pair (tvar t1 .* tvar t2)
   pure (tvar t1 :< Fst pair')
 elaborate (Fix (Snd pair)) = do
   t1 <- fresh
   t2 <- fresh
-  pair' <- check pair (tvar t1 .* tvar t2)
+  pair' <- elabCheck pair (tvar t1 .* tvar t2)
   pure (tvar t2 :< Snd pair')
 elaborate (Fix (Expr.Bool b)) = pure (boolT :< Expr.Bool b)
 elaborate (Fix (If c t e)) = do
-  c' <- check c boolT
+  c' <- elabCheck c boolT
   t' <- elaborate t
   e' <- elaborate e
   result <- unify (extract t') (extract e')
   pure (result :< If c' t' e')
 elaborate (Fix (Cons h t)) = do
   a <- fresh
-  h' <- check h (tvar a)
-  t' <- check t (listT (tvar a))
+  h' <- elabCheck h (tvar a)
+  t' <- elabCheck t (listT (tvar a))
   pure (listT (tvar a) :< Cons h' t')
 elaborate (Fix Nil) = (:< Nil) . listT . tvar <$> fresh
 elaborate (Fix (Unlist empty full list)) = do
   a <- fresh
   empty' <- elaborate empty
-  full' <- check full (tvar a .-> listT (tvar a) .-> extract empty')
-  list' <- check list (listT (tvar a))
+  full' <- elabCheck full (tvar a .-> listT (tvar a) .-> extract empty')
+  list' <- elabCheck list (listT (tvar a))
   pure (extract empty' :< Unlist empty' full' list')
 
-check :: Term -> PartialType -> Elab PartialElabTerm
-check term ty = do
+elabCheck :: Term -> PartialType -> Elab PartialElabTerm
+elabCheck term ty = do
   term' <- elaborate term
   termTy <- unify (extract term') ty
   pure (termTy :< unwrap term')
