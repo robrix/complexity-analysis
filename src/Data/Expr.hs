@@ -8,8 +8,8 @@ import GHC.Generics
 
 data Expr a
   = Abs Name a
-  | App a a
   | Var Name
+  | App a a
   | Unit
   | Pair a a
   | Fst a
@@ -48,13 +48,13 @@ maxBoundVariable = cata $ \ expr -> case expr of
   Abs name _ -> Just name
   _          -> foldr max Nothing expr
 
+var :: Name -> Term
+var name = Fix (Var name)
+
 (#) :: Term -> Term -> Term
 func # arg = Fix (App func arg)
 
 infixl 9 #
-
-var :: Name -> Term
-var name = Fix (Var name)
 
 unit :: Term
 unit = Fix Unit

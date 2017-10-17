@@ -27,14 +27,14 @@ elaborate (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (envExtend n t) (elaborate b)
   pure ((tvar t .-> extract b') :< Abs n b')
+elaborate (Fix (Var name)) = do
+  env <- ask
+  pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env) :< Var name)
 elaborate (Fix (App f a)) = do
   t <- fresh
   a' <- elaborate a
   f' <- check f (extract a' .-> tvar t)
   pure (tvar t :< App f' a')
-elaborate (Fix (Var name)) = do
-  env <- ask
-  pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env) :< Var name)
 elaborate (Fix Expr.Unit) = pure (unitT :< Expr.Unit)
 elaborate (Fix (Pair fst snd)) = do
   fst' <- elaborate fst
