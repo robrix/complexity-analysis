@@ -6,6 +6,9 @@ module Data.Semiring
 
 import Data.Semigroup
 
+-- | The identity element of some 'Monoid' @m@.
+--
+--   If @m@ is additionally a 'Semiring', this is the additive identity of the 'Semiring'.
 zero :: Monoid m => m
 zero = mempty
 
