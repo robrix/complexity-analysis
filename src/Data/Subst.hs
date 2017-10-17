@@ -8,6 +8,19 @@ import Data.Semigroup (Semigroup(..))
 newtype Subst value = Subst { getSubst :: [(Name, value)] }
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
+-- | Substitution composition.
+--
+-- >>> import Data.Type
+-- >>> let s1 = substSingleton (Name 0) unitT
+-- >>> let s2 = substSingleton (Name 1) boolT
+-- >>> let s3 = substSingleton (Name 2) (tvar (Name 0) .* tvar (Name 1))
+-- >>> let t = tvar (Name 0) .-> tvar (Name 1) .-> tvar (Name 2)
+-- >>> s1 <> (s2 <> s3) == (s1 <> s2) <> s3
+-- True
+-- >>> substitute (s1 <> s2 <> s3) t == foldr substitute t [ s1, s2, s3 ]
+-- True
+-- >>> substitute (s1 <> s2 <> s3) t
+-- Free (Free Unit :-> Free (Free Bool :-> Free (Free Unit :* Free Bool)))
 instance Substitutable value value => Semigroup (Subst value) where
   s1 <> s2 = Subst (getSubst s1 ++ getSubst (substitute s1 s2))
 
