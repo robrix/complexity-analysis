@@ -2,8 +2,6 @@
 module Data.Subst where
 
 import Data.Bifunctor (second)
-import Data.Function (on)
-import qualified Data.List as List
 import Data.Name
 import Data.Semigroup (Semigroup(..))
 
@@ -11,7 +9,7 @@ newtype Subst value = Subst { getSubst :: [(Name, value)] }
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
 instance Substitutable value value => Semigroup (Subst value) where
-  s1 <> s2 = Subst (List.unionBy ((==) `on` fst) (getSubst (substitute s1 s2)) (getSubst s1))
+  s1 <> s2 = Subst (getSubst s1 ++ getSubst (substitute s1 (foldr substDelete s2 (map fst (getSubst s1)))))
 
 instance Substitutable value value => Monoid (Subst value) where
   mempty = Subst []
