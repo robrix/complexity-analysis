@@ -98,7 +98,7 @@ instance FreeTypeVariables (Set.Set Name) where
   freeTypeVariables = id
 
 
-substType :: Binder a a => Subst a -> Type a -> Either (Type a) a
+substType :: Substitutable a a => Subst a -> Type a -> Either (Type a) a
 substType subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup name subst)
 substType subst (ForAll name body) = Left (ForAll name (substitute (substDelete name subst) body))
 substType subst (arg :-> ret)      = Left (substitute subst arg :-> substitute subst ret)
@@ -107,14 +107,14 @@ substType subst (fst :* snd)       = Left (substitute subst fst :* substitute su
 substType _     Bool               = Left Bool
 substType subst (List a)           = Left (List (substitute subst a))
 
-instance Binder PartialType PartialType where
+instance Substitutable PartialType PartialType where
   substitute subst (Free t) = either wrap id (substType subst t)
   substitute subst (Pure a) = Pure (substitute subst a)
 
-instance Binder PartialType Error where
+instance Substitutable PartialType Error where
   substitute _     (FreeVariable name)    = FreeVariable name
   substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
   substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
 
-instance Functor f => Binder PartialType (Cofree f PartialType) where
+instance Functor f => Substitutable PartialType (Cofree f PartialType) where
   substitute subst (a :< f) = substitute subst a :< fmap (substitute subst) f

@@ -10,10 +10,10 @@ import Data.Semigroup (Semigroup(..))
 newtype Subst value = Subst { getSubst :: [(Name, value)] }
   deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
 
-instance Binder value value => Semigroup (Subst value) where
+instance Substitutable value value => Semigroup (Subst value) where
   s1 <> s2 = Subst (List.unionBy ((==) `on` fst) (getSubst (substitute s1 s2)) (getSubst s1))
 
-instance Binder value value => Monoid (Subst value) where
+instance Substitutable value value => Monoid (Subst value) where
   mempty = Subst []
   mappend = (<>)
 
@@ -26,12 +26,12 @@ substDelete name = Subst . filter ((/= name) . fst) . getSubst
 substSingleton :: Name -> value -> Subst value
 substSingleton name value = Subst [(name, value)]
 
-substExtend :: Binder value value => Name -> value -> Subst value -> Subst value
+substExtend :: Substitutable value value => Name -> value -> Subst value -> Subst value
 substExtend name value = (substSingleton name value <>)
 
 
-class Binder ty value where
+class Substitutable ty value where
   substitute :: Subst ty -> value -> value
 
-instance Binder ty ty => Binder ty (Subst ty) where
+instance Substitutable ty ty => Substitutable ty (Subst ty) where
   substitute subst = Subst . map (second (substitute subst)) . getSubst
