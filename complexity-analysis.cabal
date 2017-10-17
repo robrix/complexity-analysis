@@ -18,6 +18,7 @@ library
                      , Data.Complexity
                      , Data.Env
                      , Data.Expr
+                     , Data.FreeTypeVariables
                      , Data.Interval
                      , Data.Name
                      , Data.Subst

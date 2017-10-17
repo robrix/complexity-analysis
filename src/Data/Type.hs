@@ -4,6 +4,7 @@ module Data.Type where
 import Control.Comonad.Cofree
 import Control.Monad.Free
 import Data.Either (fromLeft)
+import Data.FreeTypeVariables
 import Data.Functor.Classes.Generic
 import Data.Functor.Foldable (Recursive(..), Fix(..))
 import Data.Name
@@ -83,9 +84,6 @@ listT :: PartialType -> PartialType
 listT = wrap . List
 
 
-class FreeTypeVariables name t where
-  freeTypeVariables :: t -> Set.Set name
-
 instance FreeTypeVariables Name PartialType where
   freeTypeVariables = iter freeTypeVariables . (Set.empty <$)
 
@@ -93,9 +91,6 @@ instance FreeTypeVariables Name t => FreeTypeVariables Name (Type t) where
   freeTypeVariables (TVar name)        = Set.singleton name
   freeTypeVariables (ForAll name body) = Set.delete name (freeTypeVariables body)
   freeTypeVariables ty                 = foldMap freeTypeVariables ty
-
-instance FreeTypeVariables name (Set.Set name) where
-  freeTypeVariables = id
 
 
 substType :: Substitutable a a => Subst a -> Type a -> Either (Type a) a

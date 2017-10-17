@@ -9,6 +9,7 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Data.Env
 import Data.Expr as Expr
+import Data.FreeTypeVariables
 import Data.Functor.Foldable (Fix(..))
 import Data.Name
 import qualified Data.Set as Set
