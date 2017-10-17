@@ -124,6 +124,54 @@ check (Fix (Unlist empty full list)) Nothing = do
   _ <- check list (Just (listT (tvar a)))
   pure empty'
 
+checkAlgebra :: Expr (Maybe PartialType -> Elab PartialType) -> Maybe PartialType -> Elab PartialType
+checkAlgebra term (Just ty) = checkAlgebra term Nothing >>= unify ty
+checkAlgebra (Abs n b) Nothing = do
+  t <- fresh
+  b' <- local (envExtend n t) (b Nothing)
+  pure (tvar t .-> b')
+checkAlgebra (App f a) Nothing = do
+  t <- fresh
+  a' <- a Nothing
+  _ <- f (Just (a' .-> tvar t))
+  pure (tvar t)
+checkAlgebra (Var name) Nothing = do
+  env <- ask
+  pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env))
+checkAlgebra Expr.Unit Nothing = pure unitT
+checkAlgebra (Pair fst snd) Nothing = do
+  fst' <- fst Nothing
+  snd' <- snd Nothing
+  pure (fst' .* snd')
+checkAlgebra (Fst pair) Nothing = do
+  t1 <- fresh
+  t2 <- fresh
+  _ <- pair (Just (tvar t1 .* tvar t2))
+  pure (tvar t1)
+checkAlgebra (Snd pair) Nothing = do
+  t1 <- fresh
+  t2 <- fresh
+  _ <- pair (Just (tvar t1 .* tvar t2))
+  pure (tvar t2)
+checkAlgebra (Expr.Bool _) Nothing = pure boolT
+checkAlgebra (If c t e) Nothing = do
+  _ <- c (Just boolT)
+  t' <- t Nothing
+  e' <- e Nothing
+  unify t' e'
+checkAlgebra (Cons h t) Nothing = do
+  a <- fresh
+  _ <- h (Just (tvar a))
+  _ <- t (Just (listT (tvar a)))
+  pure (listT (tvar a))
+checkAlgebra Nil Nothing = listT . tvar <$> fresh
+checkAlgebra (Unlist empty full list) Nothing = do
+  a <- fresh
+  empty' <- empty Nothing
+  _ <- full (Just (tvar a .-> listT (tvar a) .-> empty'))
+  _ <- list (Just (listT (tvar a)))
+  pure empty'
+
 
 unify :: PartialType -> PartialType -> Elab PartialType
 unify (Pure e1) _         = pure (Pure e1)
