@@ -76,6 +76,55 @@ elabCheck term ty = do
   termTy <- unify (extract term') ty
   pure (termTy :< unwrap term')
 
+infer :: Term -> Elab PartialType
+infer (Fix (Abs n b)) = do
+  t <- fresh
+  b' <- local (envExtend n t) (infer b)
+  pure (tvar t .-> b')
+infer (Fix (App f a)) = do
+  t <- fresh
+  a' <- infer a
+  _ <- check f (a' .-> tvar t)
+  pure (tvar t)
+infer (Fix (Var name)) = do
+  env <- ask
+  pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env))
+infer (Fix Expr.Unit) = pure unitT
+infer (Fix (Pair fst snd)) = do
+  fst' <- infer fst
+  snd' <- infer snd
+  pure (fst' .* snd')
+infer (Fix (Fst pair)) = do
+  t1 <- fresh
+  t2 <- fresh
+  _ <- check pair (tvar t1 .* tvar t2)
+  pure (tvar t1)
+infer (Fix (Snd pair)) = do
+  t1 <- fresh
+  t2 <- fresh
+  _ <- check pair (tvar t1 .* tvar t2)
+  pure (tvar t2)
+infer (Fix (Expr.Bool _)) = pure boolT
+infer (Fix (If c t e)) = do
+  _ <- check c boolT
+  t' <- infer t
+  e' <- infer e
+  unify t' e'
+infer (Fix (Cons h t)) = do
+  a <- fresh
+  _ <- check h (tvar a)
+  _ <- check t (listT (tvar a))
+  pure (listT (tvar a))
+infer (Fix Nil) = listT . tvar <$> fresh
+infer (Fix (Unlist empty full list)) = do
+  a <- fresh
+  empty' <- infer empty
+  _ <- check full (tvar a .-> listT (tvar a) .-> empty')
+  _ <- check list (listT (tvar a))
+  pure empty'
+
+check :: Term -> PartialType -> Elab PartialType
+check term ty = infer term >>= unify ty
 
 unify :: PartialType -> PartialType -> Elab PartialType
 unify (Pure e1) _         = pure (Pure e1)
