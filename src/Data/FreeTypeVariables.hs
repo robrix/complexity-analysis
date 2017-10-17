@@ -1,10 +1,11 @@
-{-# LANGUAGE FlexibleInstances, FunctionalDependencies, MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 module Data.FreeTypeVariables where
 
+import Data.Name
 import qualified Data.Set as Set
 
-class FreeTypeVariables name t | t -> name where
-  freeTypeVariables :: t -> Set.Set name
+class FreeTypeVariables t where
+  freeTypeVariables :: t -> Set.Set Name
 
-instance FreeTypeVariables name (Set.Set name) where
+instance FreeTypeVariables (Set.Set Name) where
   freeTypeVariables = id
