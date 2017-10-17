@@ -3,7 +3,8 @@ module Data.Semiring
 ( zero
 , Semiring(..)
 , Semigroup(..)
--- Conveniences
+-- Instances
+, Arith(..)
 , Mult(..)
 ) where
 
@@ -64,6 +65,21 @@ instance Semiring () where
 instance Monoid a => Semiring [a] where
   one = [zero]
   as >< bs = mappend <$> as <*> bs
+
+
+newtype Arith a = Arith { getArith :: a }
+  deriving (Bounded, Eq, Num, Ord, Read, Show)
+
+instance Num a => Semigroup (Arith a) where
+  (<>) = (+)
+
+instance Num a => Monoid (Arith a) where
+  mempty = 0
+  mappend = (+)
+
+instance Num a => Semiring (Arith a) where
+  one = 1
+  (><) = (*)
 
 
 -- | The multiplicative 'Monoid' taken from a 'Semiring'
