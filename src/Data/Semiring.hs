@@ -1,7 +1,10 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Data.Semiring
 ( zero
 , Semiring(..)
 , Semigroup(..)
+-- Conveniences
+, Mult(..)
 ) where
 
 import Data.Semigroup
@@ -56,3 +59,14 @@ class (Semigroup m, Monoid m) => Semiring m where
 instance Semiring () where
   one = ()
   (><) = (<>)
+
+
+newtype Mult a = Mult { getMult :: a }
+  deriving (Bounded, Eq, Ord, Read, Show)
+
+instance Semiring a => Semigroup (Mult a) where
+  Mult a <> Mult b = Mult (a >< b)
+
+instance Semiring a => Monoid (Mult a) where
+  mempty = Mult one
+  mappend = (<>)
