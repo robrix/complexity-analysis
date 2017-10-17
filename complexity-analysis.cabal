@@ -21,6 +21,7 @@ library
                      , Data.FreeTypeVariables
                      , Data.Interval
                      , Data.Name
+                     , Data.Semiring
                      , Data.Subst
                      , Data.Type
   other-modules:       Data.Functor.Classes.Generic
