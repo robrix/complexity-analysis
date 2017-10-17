@@ -76,55 +76,54 @@ elabCheck term ty = do
   termTy <- unify (extract term') ty
   pure (termTy :< unwrap term')
 
-infer :: Term -> Elab PartialType
-infer (Fix (Abs n b)) = do
+check :: Term -> Maybe PartialType -> Elab PartialType
+check term (Just ty) = check term Nothing >>= unify ty
+check (Fix (Abs n b)) Nothing = do
   t <- fresh
-  b' <- local (envExtend n t) (infer b)
+  b' <- local (envExtend n t) (check b Nothing)
   pure (tvar t .-> b')
-infer (Fix (App f a)) = do
+check (Fix (App f a)) Nothing = do
   t <- fresh
-  a' <- infer a
-  _ <- check f (a' .-> tvar t)
+  a' <- check a Nothing
+  _ <- check f (Just (a' .-> tvar t))
   pure (tvar t)
-infer (Fix (Var name)) = do
+check (Fix (Var name)) Nothing = do
   env <- ask
   pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env))
-infer (Fix Expr.Unit) = pure unitT
-infer (Fix (Pair fst snd)) = do
-  fst' <- infer fst
-  snd' <- infer snd
+check (Fix Expr.Unit) Nothing = pure unitT
+check (Fix (Pair fst snd)) Nothing = do
+  fst' <- check fst Nothing
+  snd' <- check snd Nothing
   pure (fst' .* snd')
-infer (Fix (Fst pair)) = do
+check (Fix (Fst pair)) Nothing = do
   t1 <- fresh
   t2 <- fresh
-  _ <- check pair (tvar t1 .* tvar t2)
+  _ <- check pair (Just (tvar t1 .* tvar t2))
   pure (tvar t1)
-infer (Fix (Snd pair)) = do
+check (Fix (Snd pair)) Nothing = do
   t1 <- fresh
   t2 <- fresh
-  _ <- check pair (tvar t1 .* tvar t2)
+  _ <- check pair (Just (tvar t1 .* tvar t2))
   pure (tvar t2)
-infer (Fix (Expr.Bool _)) = pure boolT
-infer (Fix (If c t e)) = do
-  _ <- check c boolT
-  t' <- infer t
-  e' <- infer e
+check (Fix (Expr.Bool _)) Nothing = pure boolT
+check (Fix (If c t e)) Nothing = do
+  _ <- check c (Just boolT)
+  t' <- check t Nothing
+  e' <- check e Nothing
   unify t' e'
-infer (Fix (Cons h t)) = do
+check (Fix (Cons h t)) Nothing = do
   a <- fresh
-  _ <- check h (tvar a)
-  _ <- check t (listT (tvar a))
+  _ <- check h (Just (tvar a))
+  _ <- check t (Just (listT (tvar a)))
   pure (listT (tvar a))
-infer (Fix Nil) = listT . tvar <$> fresh
-infer (Fix (Unlist empty full list)) = do
+check (Fix Nil) Nothing = listT . tvar <$> fresh
+check (Fix (Unlist empty full list)) Nothing = do
   a <- fresh
-  empty' <- infer empty
-  _ <- check full (tvar a .-> listT (tvar a) .-> empty')
-  _ <- check list (listT (tvar a))
+  empty' <- check empty Nothing
+  _ <- check full (Just (tvar a .-> listT (tvar a) .-> empty'))
+  _ <- check list (Just (listT (tvar a)))
   pure empty'
 
-check :: Term -> PartialType -> Elab PartialType
-check term ty = infer term >>= unify ty
 
 unify :: PartialType -> PartialType -> Elab PartialType
 unify (Pure e1) _         = pure (Pure e1)
