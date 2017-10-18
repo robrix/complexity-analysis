@@ -3,7 +3,6 @@ module Analysis.Elaboration where
 
 import Control.Comonad (extract)
 import Control.Comonad.Cofree
-import Control.Comonad.Trans.Cofree (tailF)
 import Control.Monad.Free
 import Control.Monad.Fresh
 import Control.Monad.Reader
@@ -11,7 +10,7 @@ import Control.Monad.State
 import Data.Env
 import Data.Expr as Expr
 import Data.FreeTypeVariables
-import Data.Functor.Foldable (Fix(..), cata)
+import Data.Functor.Foldable (Fix(..))
 import Data.Name
 import qualified Data.Set as Set
 import Data.Subst
@@ -85,10 +84,6 @@ check term ty = do
   term' <- infer term
   termTy <- unify (extract term') ty
   pure (termTy :< unwrap term')
-
-
-erase :: AnnotatedTerm PartialType -> Term
-erase = cata (Fix . tailF)
 
 
 unify :: PartialType -> PartialType -> Elab PartialType

@@ -2,8 +2,9 @@
 module Data.Expr where
 
 import Control.Comonad.Cofree
+import Control.Comonad.Trans.Cofree (tailF)
 import Data.Functor.Classes.Generic
-import Data.Functor.Foldable (Recursive(..), Fix(..))
+import Data.Functor.Foldable (Fix(..), cata)
 import Data.Name
 import GHC.Generics
 
@@ -29,6 +30,10 @@ instance Show1 Expr where liftShowsPrec = genericLiftShowsPrec
 
 type Term = Fix Expr
 type AnnotatedTerm = Cofree Expr
+
+erase :: AnnotatedTerm a -> Term
+erase = cata (Fix . tailF)
+
 
 makeAbs :: Name -> Term -> Term
 makeAbs name body = Fix (Abs name body)
