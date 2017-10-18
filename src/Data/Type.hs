@@ -131,7 +131,7 @@ instance FreeTypeVariables t => FreeTypeVariables (Type t) where
   freeTypeVariables ty                 = foldMap freeTypeVariables ty
 
 
-substType :: Substitutable a a => Subst a -> Type a -> Either (Type a) a
+substType :: Substitutable ty recur => Subst ty -> Type recur -> Either (Type recur) ty
 substType subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup name subst)
 substType subst (ForAll name body) = Left (ForAll name (substitute (substDelete name subst) body))
 substType subst (arg :-> ret)      = Left (substitute subst arg :-> substitute subst ret)
