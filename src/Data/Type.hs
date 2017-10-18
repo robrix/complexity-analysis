@@ -70,7 +70,7 @@ forAllT hoas = makeForAllT n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (tvar n)
 
-maxBoundVariable :: (Recursive t, Embeddable1 Type (Base t), Embeddable Type t) => t -> Maybe Name
+maxBoundVariable :: (Recursive t, Embeddable1 Type (Base t)) => t -> Maybe Name
 maxBoundVariable = cata (join . withEmb1 (\ partial -> case partial of
   ForAll name _ -> Just name
   expr          -> foldr max Nothing expr))
