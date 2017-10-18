@@ -48,6 +48,10 @@ data PartialF expr error recur = ContinueF (expr recur) | StopF error
 
 type instance Base (Partial expr error) = PartialF expr error
 
+instance Functor expr => Recursive (Partial expr error) where
+  project (Continue expr) = ContinueF expr
+  project (Stop err)      = StopF err
+
 
 totalToPartial :: TotalType -> PartialType
 totalToPartial = cata wrap
