@@ -38,15 +38,15 @@ data Error
 type Total = Fix
 
 
-data Partial expr error recur = Cont (expr recur) | Fault error
+data Partial ty error recur = Cont (ty recur) | Fault error
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
-fault :: error -> Rec (Partial expr) error
+fault :: error -> Rec (Partial ty) error
 fault = Rec . Fault
 
-instance (Eq1   expr, Eq   ann) => Eq1   (Partial expr ann) where liftEq        = genericLiftEq
-instance (Ord1  expr, Ord  ann) => Ord1  (Partial expr ann) where liftCompare   = genericLiftCompare
-instance (Show1 expr, Show ann) => Show1 (Partial expr ann) where liftShowsPrec = genericLiftShowsPrec
+instance (Eq1   ty, Eq   ann) => Eq1   (Partial ty ann) where liftEq        = genericLiftEq
+instance (Ord1  ty, Ord  ann) => Ord1  (Partial ty ann) where liftCompare   = genericLiftCompare
+instance (Show1 ty, Show ann) => Show1 (Partial ty ann) where liftShowsPrec = genericLiftShowsPrec
 
 
 totalToPartial :: Total Type -> Rec (Partial Type) error
@@ -54,7 +54,7 @@ totalToPartial = cata emb
 
 partialToTotal :: Rec (Partial Type) error -> Either [error] (Total Type)
 partialToTotal = cata (\ partial -> case partial of
-  Cont expr -> fmap Fix (sequenceA expr)
+  Cont ty   -> fmap Fix (sequenceA ty)
   Fault err -> Left [err])
 
 
@@ -72,7 +72,7 @@ forAllT hoas = makeForAllT n body
 maxBoundVariable :: (Recursive t, Embeddable1 Type (Base t)) => t -> Maybe Name
 maxBoundVariable = cata (maybe Nothing (\ partial -> case partial of
   ForAll name _ -> Just name
-  expr          -> foldr max Nothing expr) . unemb1)
+  ty            -> foldr max Nothing ty) . unemb1)
 
 -- | Generalize a type by binding its free variables with foralls.
 --
@@ -124,8 +124,8 @@ prettyType d ty = cata (\ ty d -> case ty of
 instance FreeTypeVariables (Rec (Partial Type) error) where
   freeTypeVariables = cata (freeTypeVariables . first (const (Set.empty :: Set.Set Name)))
 
-instance (FreeTypeVariables (expr recur), FreeTypeVariables error) => FreeTypeVariables (Partial expr error recur) where
-  freeTypeVariables (Cont expr) = freeTypeVariables expr
+instance (FreeTypeVariables (ty recur), FreeTypeVariables error) => FreeTypeVariables (Partial ty error recur) where
+  freeTypeVariables (Cont ty)   = freeTypeVariables ty
   freeTypeVariables (Fault err) = freeTypeVariables err
 
 instance FreeTypeVariables t => FreeTypeVariables (Type t) where
@@ -150,7 +150,7 @@ instance Substitutable (Total Type) (Total Type) where
   substitute subst (Fix ty) = either emb id (substType subst ty)
 
 instance Substitutable (Rec (Partial Type) error) error => Substitutable (Rec (Partial Type) error) (Rec (Partial Type) error) where
-  substitute subst (Rec (Cont expr)) = either emb id (substType subst expr)
+  substitute subst (Rec (Cont ty))   = either emb id (substType subst ty)
   substitute subst (Rec (Fault err)) = fault (substitute subst err)
 
 instance Substitutable (Rec (Partial Type) Error) Error where
@@ -158,15 +158,15 @@ instance Substitutable (Rec (Partial Type) Error) Error where
   substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
   substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
 
-instance Functor expr => Bifunctor (Partial expr) where
-  bimap _ g (Cont expr) = Cont (fmap g expr)
+instance Functor ty => Bifunctor (Partial ty) where
+  bimap _ g (Cont ty)   = Cont (fmap g ty)
   bimap f _ (Fault err) = Fault (f err)
 
-instance Embeddable1 expr functor => Embeddable1 expr (Partial functor error) where
+instance Embeddable1 ty functor => Embeddable1 ty (Partial functor error) where
   emb1 = Cont . emb1
 
-  unemb1 (Cont expr) = unemb1 expr
-  unemb1 _           = Nothing
+  unemb1 (Cont ty) = unemb1 ty
+  unemb1 _         = Nothing
 
 instance Embeddable1 Type Type where
   emb1 = id
