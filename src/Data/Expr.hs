@@ -50,7 +50,7 @@ exprF :: Ann expr ann recur -> expr recur
 exprF (In _ expr) = expr
 
 
-erase :: Functor expr => Term (Ann expr ann) -> Term expr
+erase :: Functor expr => Rec (Ann expr) ann -> Term expr
 erase = cata (Fix . exprF)
 
 
