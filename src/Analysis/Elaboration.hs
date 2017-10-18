@@ -87,8 +87,8 @@ check term ty = do
 
 
 unify :: Elaborated Type Error -> Elaborated Type Error -> Elab (Elaborated Type Error)
-unify (Rec (Stop e1)) _                = pure (fault e1)
-unify _               (Rec (Stop e2))  = pure (fault e2)
+unify (Rec (Fault e)) _                = pure (fault e)
+unify _               (Rec (Fault e))  = pure (fault e)
 unify (Rec (Cont t1)) (Rec (Cont t2))
   | TVar name1 <- t1                   = bind name1 t2
   |                   TVar name2 <- t2 = bind name2 t1

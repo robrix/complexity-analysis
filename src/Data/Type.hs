@@ -38,11 +38,11 @@ data Error
 type Total = Fix
 
 
-data Partial expr error recur = Cont (expr recur) | Stop error
+data Partial expr error recur = Cont (expr recur) | Fault error
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
 fault :: error -> Rec (Partial expr) error
-fault = Rec . Stop
+fault = Rec . Fault
 
 instance (Eq1   expr, Eq   ann) => Eq1   (Partial expr ann) where liftEq        = genericLiftEq
 instance (Ord1  expr, Ord  ann) => Ord1  (Partial expr ann) where liftCompare   = genericLiftCompare
@@ -55,7 +55,7 @@ totalToPartial = cata emb
 partialToTotal :: Rec (Partial Type) error -> Either [error] (Total Type)
 partialToTotal = cata (\ partial -> case partial of
   Cont expr -> fmap Fix (sequenceA expr)
-  Stop err  -> Left [err])
+  Fault err -> Left [err])
 
 
 tvar :: Embeddable Type t => Name -> t
@@ -126,7 +126,7 @@ instance FreeTypeVariables (Rec (Partial Type) error) where
 
 instance (FreeTypeVariables (expr recur), FreeTypeVariables error) => FreeTypeVariables (Partial expr error recur) where
   freeTypeVariables (Cont expr) = freeTypeVariables expr
-  freeTypeVariables (Stop err)  = freeTypeVariables err
+  freeTypeVariables (Fault err) = freeTypeVariables err
 
 instance FreeTypeVariables t => FreeTypeVariables (Type t) where
   freeTypeVariables (TVar name)        = Set.singleton name
@@ -150,8 +150,8 @@ instance Substitutable (Total Type) (Total Type) where
   substitute subst (Fix ty) = either emb id (substType subst ty)
 
 instance Substitutable (Rec (Partial Type) error) error => Substitutable (Rec (Partial Type) error) (Rec (Partial Type) error) where
-  substitute subst (Rec (Cont expr))  = either emb id (substType subst expr)
-  substitute subst (Rec (Stop error)) = fault (substitute subst error)
+  substitute subst (Rec (Cont expr)) = either emb id (substType subst expr)
+  substitute subst (Rec (Fault err)) = fault (substitute subst err)
 
 instance Substitutable (Rec (Partial Type) Error) Error where
   substitute _     (FreeVariable name)    = FreeVariable name
@@ -160,7 +160,7 @@ instance Substitutable (Rec (Partial Type) Error) Error where
 
 instance Functor expr => Bifunctor (Partial expr) where
   bimap _ g (Cont expr) = Cont (fmap g expr)
-  bimap f _ (Stop err)  = Stop (f err)
+  bimap f _ (Fault err) = Fault (f err)
 
 instance Embeddable1 expr functor => Embeddable1 expr (Partial functor error) where
   emb1 = Cont . emb1
