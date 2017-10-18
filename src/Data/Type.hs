@@ -48,11 +48,11 @@ partialToTotal = iter (fmap Fix . sequenceA) . fmap (Left . pure)
 tvar :: Name -> PartialType
 tvar name = wrap (TVar name)
 
-makeForAll :: Name -> PartialType -> PartialType
-makeForAll name body = wrap (ForAll name body)
+makeForAllT :: Name -> PartialType -> PartialType
+makeForAllT name body = wrap (ForAll name body)
 
 forAllT :: (PartialType -> PartialType) -> PartialType
-forAllT hoas = makeForAll n body
+forAllT hoas = makeForAllT n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (tvar n)
 
@@ -60,6 +60,19 @@ maxBoundVariable :: PartialType -> Maybe Name
 maxBoundVariable = iter (\ expr -> case expr of
   ForAll name _ -> Just name
   _             -> foldr max Nothing expr) . (Nothing <$)
+
+-- | Generalize a type by binding its free variables with foralls.
+--
+-- >>> generalize unitT
+-- Free Unit
+--
+-- prop> \ v -> generalize (tvar v .-> tvar v) == forAllT (\ t -> t .-> t)
+generalize :: PartialType -> PartialType
+generalize ty = foldr (\ v ty -> forAllT (\ new -> substitute (substSingleton v new) ty)) ty (Set.toList (freeTypeVariables ty))
+
+specialize :: Type PartialType -> Name -> PartialType
+specialize (ForAll n b) to = substitute (substSingleton n (tvar to)) b
+specialize orig         _  = Free orig
 
 (.->) :: PartialType -> PartialType -> PartialType
 arg .-> ret = wrap (arg :-> ret)
@@ -113,3 +126,7 @@ instance Substitutable PartialType Error where
 
 instance Functor f => Substitutable PartialType (Cofree f PartialType) where
   substitute subst (a :< f) = substitute subst a :< fmap (substitute subst) f
+
+-- $setup
+-- >>> import Test.QuickCheck
+-- >>> instance Arbitrary Name where arbitrary = Name <$> arbitrary

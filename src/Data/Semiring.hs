@@ -7,6 +7,7 @@ module Data.Semiring
 , Arith(..)
 , Mult(..)
 , Few(..)
+, Boole(..)
 ) where
 
 import Data.Semigroup
@@ -86,6 +87,23 @@ instance Semiring Few where
   _ >< Zero = Zero
   One >< One = One
   _ >< _ = More
+
+
+newtype Boole = Boole { getBoole :: Bool }
+  deriving (Bounded, Eq, Ord, Read, Show)
+
+instance Semigroup Boole where
+  Boole a <> Boole b
+    | a == b    = Boole False
+    | otherwise = Boole (a || b)
+
+instance Monoid Boole where
+  mempty = Boole False
+  mappend = (<>)
+
+instance Semiring Boole where
+  one = Boole True
+  Boole a >< Boole b = Boole (a && b)
 
 
 -- | A 'Semiring' over a 'Num' instance.

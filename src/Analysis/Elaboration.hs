@@ -3,6 +3,7 @@ module Analysis.Elaboration where
 
 import Control.Comonad (extract)
 import Control.Comonad.Cofree
+import Control.Comonad.Trans.Cofree (tailF)
 import Control.Monad.Free
 import Control.Monad.Fresh
 import Control.Monad.Reader
@@ -10,7 +11,7 @@ import Control.Monad.State
 import Data.Env
 import Data.Expr as Expr
 import Data.FreeTypeVariables
-import Data.Functor.Foldable (Fix(..))
+import Data.Functor.Foldable (Fix(..), cata)
 import Data.Name
 import qualified Data.Set as Set
 import Data.Subst
@@ -24,61 +25,72 @@ runElab :: Elab a -> (a, Subst PartialType)
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
 elaborate :: Term -> Elab PartialElabTerm
-elaborate (Fix (Abs n b)) = do
+elaborate term = do
+  term' <- infer term
+  subst <- get
+  let ty :< tm = substitute subst term'
+  pure (generalize ty :< tm)
+
+infer :: Term -> Elab PartialElabTerm
+infer (Fix (Abs n b)) = do
   t <- fresh
-  b' <- local (envExtend n t) (elaborate b)
+  b' <- local (envExtend n t) (infer b)
   pure ((tvar t .-> extract b') :< Abs n b')
-elaborate (Fix (Var name)) = do
+infer (Fix (Var name)) = do
   env <- ask
   pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env) :< Var name)
-elaborate (Fix (App f a)) = do
+infer (Fix (App f a)) = do
   t <- fresh
-  a' <- elaborate a
+  a' <- infer a
   f' <- check f (extract a' .-> tvar t)
   pure (tvar t :< App f' a')
-elaborate (Fix (Rec n b)) = do
+infer (Fix (Rec n b)) = do
   t <- fresh
-  local (envExtend n t) (elaborate b)
-elaborate (Fix Expr.Unit) = pure (unitT :< Expr.Unit)
-elaborate (Fix (Pair fst snd)) = do
-  fst' <- elaborate fst
-  snd' <- elaborate snd
+  local (envExtend n t) (check b (tvar t))
+infer (Fix Expr.Unit) = pure (unitT :< Expr.Unit)
+infer (Fix (Pair fst snd)) = do
+  fst' <- infer fst
+  snd' <- infer snd
   pure (extract fst' .* extract snd' :< Pair fst' snd')
-elaborate (Fix (Fst pair)) = do
+infer (Fix (Fst pair)) = do
   t1 <- fresh
   t2 <- fresh
   pair' <- check pair (tvar t1 .* tvar t2)
   pure (tvar t1 :< Fst pair')
-elaborate (Fix (Snd pair)) = do
+infer (Fix (Snd pair)) = do
   t1 <- fresh
   t2 <- fresh
   pair' <- check pair (tvar t1 .* tvar t2)
   pure (tvar t2 :< Snd pair')
-elaborate (Fix (Expr.Bool b)) = pure (boolT :< Expr.Bool b)
-elaborate (Fix (If c t e)) = do
+infer (Fix (Expr.Bool b)) = pure (boolT :< Expr.Bool b)
+infer (Fix (If c t e)) = do
   c' <- check c boolT
-  t' <- elaborate t
-  e' <- elaborate e
+  t' <- infer t
+  e' <- infer e
   result <- unify (extract t') (extract e')
   pure (result :< If c' t' e')
-elaborate (Fix (Cons h t)) = do
+infer (Fix (Cons h t)) = do
   a <- fresh
   h' <- check h (tvar a)
   t' <- check t (listT (tvar a))
   pure (listT (tvar a) :< Cons h' t')
-elaborate (Fix Nil) = (:< Nil) . listT . tvar <$> fresh
-elaborate (Fix (Unlist empty full list)) = do
+infer (Fix Nil) = (:< Nil) . listT . tvar <$> fresh
+infer (Fix (Unlist empty full list)) = do
   a <- fresh
-  empty' <- elaborate empty
+  empty' <- infer empty
   full' <- check full (tvar a .-> listT (tvar a) .-> extract empty')
   list' <- check list (listT (tvar a))
   pure (extract empty' :< Unlist empty' full' list')
 
 check :: Term -> PartialType -> Elab PartialElabTerm
 check term ty = do
-  term' <- elaborate term
+  term' <- infer term
   termTy <- unify (extract term') ty
   pure (termTy :< unwrap term')
+
+
+erase :: PartialElabTerm -> Term
+erase = cata (Fix . tailF)
 
 
 unify :: PartialType -> PartialType -> Elab PartialType
@@ -87,6 +99,7 @@ unify _         (Pure e2) = pure (Pure e2)
 unify (Free t1) (Free t2)
   | TVar name1 <- t1                   = bind name1 t2
   |                   TVar name2 <- t2 = bind name2 t1
+  | ForAll{}   <- t1, ForAll{}   <- t2 = fresh >>= \ n -> makeForAllT n <$> unify (specialize t1 n) (specialize t2 n)
   | a1 :-> b1  <- t1, a2 :-> b2  <- t2 = (.->) <$> unify a1 a2 <*> unify b1 b2
   | a1 :*  b1  <- t1, a2 :*  b2  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
   | Type.Unit  <- t1, Type.Unit  <- t2 = pure unitT
