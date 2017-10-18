@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables #-}
 module Data.Type where
 
+import Control.Monad (join)
 import Data.Bifunctor
 import Data.Either (fromLeft)
 import Data.FreeTypeVariables
@@ -64,16 +65,15 @@ tvar name = emb (TVar name)
 makeForAllT :: Embeddable Type t => Name -> t -> t
 makeForAllT name body = emb (ForAll name body)
 
-forAllT :: (Recursive t, Embeddable Type t, Unembeddable1 Type (Base t)) => (t -> t) -> t
+forAllT :: (Recursive t, Embeddable1 Type (Base t), Embeddable Type t) => (t -> t) -> t
 forAllT hoas = makeForAllT n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (tvar n)
 
-maxBoundVariable :: (Recursive t, Unembeddable1 Type (Base t)) => t -> Maybe Name
-maxBoundVariable = cata (\ partial -> case unemb1 partial of
-  Just (ForAll name _) -> Just name
-  Just expr            -> foldr max Nothing expr
-  Nothing              -> Nothing)
+maxBoundVariable :: (Recursive t, Embeddable1 Type (Base t), Embeddable Type t) => t -> Maybe Name
+maxBoundVariable = cata (join . withEmb1 (\ partial -> case partial of
+  ForAll name _ -> Just name
+  expr          -> foldr max Nothing expr))
 
 -- | Generalize a type by binding its free variables with foralls.
 --
