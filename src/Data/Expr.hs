@@ -28,14 +28,14 @@ instance Ord1 Expr where liftCompare = genericLiftCompare
 instance Show1 Expr where liftShowsPrec = genericLiftShowsPrec
 
 type Term = Fix Expr
-type AnnotatedTerm = Annotated Expr
+type AnnotatedTerm = Ann Expr
 
-data Annotated f a = In { ann :: a, out :: f (Annotated f a) }
-data AnnotatedF f a b = InF { annF :: a, outF :: f b }
+data Ann f a = In { ann :: a, out :: f (Ann f a) }
+data AnnF f a b = InF { annF :: a, outF :: f b }
   deriving (Foldable, Functor, Traversable)
 
-type instance Base (Annotated f a) = AnnotatedF f a
-instance Functor f => Recursive (Annotated f a) where project (In a o) = InF a o
+type instance Base (Ann f a) = AnnF f a
+instance Functor f => Recursive (Ann f a) where project (In a o) = InF a o
 
 erase :: AnnotatedTerm a -> Term
 erase = cata (Fix . outF)
@@ -114,8 +114,8 @@ unlist :: Term -> Term -> Term -> Term
 unlist empty full list = Fix (Unlist empty full list)
 
 
-instance (Substitutable ty ty, Functor expr) => Substitutable ty (Annotated expr ty) where
+instance (Substitutable ty ty, Functor expr) => Substitutable ty (Ann expr ty) where
   substitute subst (In a o) = In (substitute subst a) (fmap (substitute subst) o)
 
-instance Functor expr => Functor (Annotated expr) where
+instance Functor expr => Functor (Ann expr) where
   fmap f = go where go (In a o) = In (f a) (fmap go o)
