@@ -24,6 +24,9 @@ type PartialElabTerm = Cofree Expr PartialType
 runElab :: Elab a -> (a, Subst PartialType)
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
+elaborate :: Term -> Elab PartialElabTerm
+elaborate = infer
+
 infer :: Term -> Elab PartialElabTerm
 infer (Fix (Abs n b)) = do
   t <- fresh
