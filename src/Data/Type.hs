@@ -84,8 +84,8 @@ maxBoundVariable = cata (join . withEmb1 (\ partial -> case partial of
 generalize :: (Recursive ty, Embeddable1 Type (Base ty), Embeddable Type ty, FreeTypeVariables ty, Substitutable ty ty) => ty -> ty
 generalize ty = foldr (\ v ty -> forAllT (\ new -> substitute (substSingleton v new) ty)) ty (Set.toList (freeTypeVariables ty))
 
-specialize :: forall error . Substitutable (Rec (Partial Type) error) error => Type (Rec (Partial Type) error) -> Name -> Rec (Partial Type) error
-specialize (ForAll n b) to = substitute (substSingleton n (tvar to) :: Subst (Rec (Partial Type) error)) b
+specialize :: forall ty . (Embeddable Type ty, Substitutable ty ty) => Type ty -> Name -> ty
+specialize (ForAll n b) to = substitute (substSingleton n (tvar to) :: Subst ty) b
 specialize orig         _  = emb orig
 
 (.->) :: Embeddable Type t => t -> t -> t
