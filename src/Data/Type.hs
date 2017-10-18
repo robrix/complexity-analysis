@@ -41,9 +41,6 @@ type Total = Fix
 data Partial expr error recur = Cont (expr recur) | Stop error
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
-cont :: expr (Rec (Partial expr) error) -> Rec (Partial expr) error
-cont = Rec . Cont
-
 stop :: error -> Rec (Partial expr) error
 stop = Rec . Stop
 
