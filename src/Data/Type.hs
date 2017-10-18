@@ -134,6 +134,9 @@ instance FreeTypeVariables t => FreeTypeVariables (Type t) where
   freeTypeVariables (ForAll name body) = Set.delete name (freeTypeVariables body)
   freeTypeVariables ty                 = foldMap freeTypeVariables ty
 
+instance FreeTypeVariables (Total Type) where
+  freeTypeVariables (Fix ty) = freeTypeVariables ty
+
 
 substType :: Substitutable ty recur => Subst ty -> Type recur -> Either (Type recur) ty
 substType subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup name subst)
