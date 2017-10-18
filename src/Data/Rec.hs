@@ -16,6 +16,9 @@ unRec (Rec expr) = expr
 class Embeddable f t | t -> f where
   emb :: f t -> t
 
+class Embeddable1 f t | t -> f where
+  emb1 :: f a -> t a
+
 instance Embeddable f (Fix f) where
   emb = Fix
 
