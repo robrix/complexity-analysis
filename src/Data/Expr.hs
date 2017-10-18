@@ -129,3 +129,6 @@ unlist empty full list = Fix (Unlist empty full list)
 
 instance (Substitutable ty ann, Functor expr) => Substitutable ty (Rec (Ann expr) ann) where
   substitute subst (Rec (In ann expr)) = Rec (In (substitute subst ann) (fmap (substitute subst) expr))
+
+instance Monoid ann => Embeddable1 expr (Ann expr ann) where
+  emb1 = In mempty
