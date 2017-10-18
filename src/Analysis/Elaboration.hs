@@ -91,16 +91,13 @@ unify (Pure e1) _         = pure (Pure e1)
 unify _         (Pure e2) = pure (Pure e2)
 unify (Free t1) (Free t2)
   | TVar name1 <- t1                       = bind name1 t2
-  |                     TVar name2   <- t2 = bind name2 t1
-  | ForAll n1 b1 <- t1, ForAll n2 b2 <- t2 = do
-    n <- fresh
-    b <- unify (substitute (substSingleton n1 (tvar n)) b1) (substitute (substSingleton n2 (tvar n)) b2)
-    pure (makeForAllT n b)
-  | a1 :-> b1    <- t1, a2 :-> b2    <- t2 = (.->) <$> unify a1 a2 <*> unify b1 b2
-  | a1 :*  b1    <- t1, a2 :*  b2    <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
-  | Type.Unit    <- t1, Type.Unit    <- t2 = pure unitT
-  | Type.Bool    <- t1, Type.Bool    <- t2 = pure boolT
-  | List a1      <- t1, List a2      <- t2 = listT <$> unify a1 a2
+  |                   TVar name2 <- t2 = bind name2 t1
+  | ForAll{}   <- t1, ForAll{}   <- t2 = fresh >>= \ n -> makeForAllT n <$> unify (specialize t1 n) (specialize t2 n)
+  | a1 :-> b1  <- t1, a2 :-> b2  <- t2 = (.->) <$> unify a1 a2 <*> unify b1 b2
+  | a1 :*  b1  <- t1, a2 :*  b2  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
+  | Type.Unit  <- t1, Type.Unit  <- t2 = pure unitT
+  | Type.Bool  <- t1, Type.Bool  <- t2 = pure boolT
+  | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
   | otherwise = pure (Pure (TypeMismatch t1 t2))
 
 bind :: Name -> Type PartialType -> Elab PartialType
