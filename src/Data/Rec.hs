@@ -23,10 +23,10 @@ class Embeddable1 f t | t -> f where
 
   unemb1 :: t a -> Maybe (f a)
 
-instance Embeddable f (Fix f) where
-  emb = Fix
+instance Embeddable1 expr (wrap expr) => Embeddable expr (Fix (wrap expr)) where
+  emb = Fix . emb1
 
-  unemb = Just . unfix
+  unemb = unemb1 . unfix
 
 instance Embeddable1 expr (wrap expr a) => Embeddable expr (Rec (wrap expr) a) where
   emb = Rec . emb1
