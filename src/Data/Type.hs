@@ -160,6 +160,9 @@ instance Functor expr => Bifunctor (Partial expr) where
   bimap _ g (Cont expr) = Cont (fmap g expr)
   bimap f _ (Stop err)  = Stop (f err)
 
+instance Embeddable1 expr (Partial expr error) where
+  emb1 = Cont
+
 -- $setup
 -- >>> import Test.QuickCheck
 -- >>> instance Arbitrary Name where arbitrary = Name <$> arbitrary
