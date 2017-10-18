@@ -25,8 +25,8 @@ data Type a
 infixr 1 :->
 infixl 7 :*
 
-instance Eq1 Type where liftEq = genericLiftEq
-instance Ord1 Type where liftCompare = genericLiftCompare
+instance Eq1   Type where liftEq        = genericLiftEq
+instance Ord1  Type where liftCompare   = genericLiftCompare
 instance Show1 Type where liftShowsPrec = genericLiftShowsPrec
 
 data Error
