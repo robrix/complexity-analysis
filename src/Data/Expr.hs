@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable #-}
 module Data.Expr where
 
+import Control.Comonad.Cofree
 import Data.Functor.Classes.Generic
 import Data.Functor.Foldable (Recursive(..), Fix(..))
 import Data.Name
@@ -27,6 +28,7 @@ instance Ord1 Expr where liftCompare = genericLiftCompare
 instance Show1 Expr where liftShowsPrec = genericLiftShowsPrec
 
 type Term = Fix Expr
+type AnnotatedTerm = Cofree Expr
 
 makeAbs :: Name -> Term -> Term
 makeAbs name body = Fix (Abs name body)
