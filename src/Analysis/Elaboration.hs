@@ -13,26 +13,26 @@ import qualified Data.Set as Set
 import Data.Subst
 import Data.Type as Type
 
-type Elab = StateT (Subst (Partial Type Error)) (ReaderT (Env Name) Fresh)
+type Elab = StateT (Subst (Fix (Partial Type Error))) (ReaderT (Env Name) Fresh)
 
-runElab :: Elab a -> (a, Subst (Partial Type Error))
+runElab :: Elab a -> (a, Subst (Fix (Partial Type Error)))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-elaborate :: Term Expr -> Elab (Term (Ann Expr (Partial Type Error)))
+elaborate :: Term Expr -> Elab (Term (Ann Expr (Fix (Partial Type Error))))
 elaborate term = do
   term' <- infer term
   subst <- get
   let Fix (In ty tm) = substitute subst term'
   pure (Fix (In (generalize ty) tm))
 
-infer :: Term Expr -> Elab (Term (Ann Expr (Partial Type Error)))
+infer :: Term Expr -> Elab (Term (Ann Expr (Fix (Partial Type Error))))
 infer (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (envExtend n t) (infer b)
   pure (Fix (In (tvar t .-> ann b') (Abs n b')))
 infer (Fix (Var name)) = do
   env <- ask
-  pure (Fix (In (maybe (Stop (FreeVariable name)) tvar (envLookup name env)) (Var name)))
+  pure (Fix (In (maybe (stop (FreeVariable name)) tvar (envLookup name env)) (Var name)))
 infer (Fix (App f a)) = do
   t <- fresh
   a' <- infer a
@@ -76,17 +76,17 @@ infer (Fix (Unlist empty full list)) = do
   list' <- check list (listT (tvar a))
   pure (Fix (In (ann empty') (Unlist empty' full' list')))
 
-check :: Term Expr -> Partial Type Error -> Elab (Term (Ann Expr (Partial Type Error)))
+check :: Term Expr -> Fix (Partial Type Error) -> Elab (Term (Ann Expr (Fix (Partial Type Error))))
 check term ty = do
   term' <- infer term
   termTy <- unify (ann term') ty
   pure (Fix (In termTy (expr term')))
 
 
-unify :: Partial Type Error -> Partial Type Error -> Elab (Partial Type Error)
-unify (Stop e1) _         = pure (Stop e1)
-unify _         (Stop e2) = pure (Stop e2)
-unify (Continue t1) (Continue t2)
+unify :: Fix (Partial Type Error) -> Fix (Partial Type Error) -> Elab (Fix (Partial Type Error))
+unify (Fix (Stop e1))     _               = pure (stop e1)
+unify _                   (Fix (Stop e2)) = pure (stop e2)
+unify (Fix (Continue t1)) (Fix (Continue t2))
   | TVar name1 <- t1                   = bind name1 t2
   |                   TVar name2 <- t2 = bind name2 t1
   | ForAll{}   <- t1, ForAll{}   <- t2 = fresh >>= \ n -> makeForAllT n <$> unify (specialize t1 n) (specialize t2 n)
@@ -95,13 +95,13 @@ unify (Continue t1) (Continue t2)
   | Type.Unit  <- t1, Type.Unit  <- t2 = pure unitT
   | Type.Bool  <- t1, Type.Bool  <- t2 = pure boolT
   | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
-  | otherwise = pure (Stop (TypeMismatch t1 t2))
+  | otherwise = pure (stop (TypeMismatch t1 t2))
 
-bind :: Name -> Type (Partial Type Error) -> Elab (Partial Type Error)
+bind :: Name -> Type (Fix (Partial Type Error)) -> Elab (Fix (Partial Type Error))
 bind name ty
-  | TVar name' <- ty, name == name'        = pure (Continue ty)
-  | Set.member name (freeTypeVariables ty) = pure (Stop (InfiniteType name ty))
+  | TVar name' <- ty, name == name'        = pure (continue ty)
+  | Set.member name (freeTypeVariables ty) = pure (stop (InfiniteType name ty))
   | otherwise                              = do
     subst <- get
-    let ty' = substitute subst (Continue ty)
+    let ty' = substitute subst (continue ty)
     maybe (put (substExtend name ty' subst) >> pure ty') (unify ty') (substLookup name subst)
