@@ -19,19 +19,17 @@ import Data.Type as Type
 
 type Elab = StateT (Subst PartialType) (ReaderT (Env Name) Fresh)
 
-type PartialElabTerm = Cofree Expr PartialType
-
 runElab :: Elab a -> (a, Subst PartialType)
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-elaborate :: Term -> Elab PartialElabTerm
+elaborate :: Term -> Elab (AnnotatedTerm PartialType)
 elaborate term = do
   term' <- infer term
   subst <- get
   let ty :< tm = substitute subst term'
   pure (generalize ty :< tm)
 
-infer :: Term -> Elab PartialElabTerm
+infer :: Term -> Elab (AnnotatedTerm PartialType)
 infer (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (envExtend n t) (infer b)
@@ -82,14 +80,14 @@ infer (Fix (Unlist empty full list)) = do
   list' <- check list (listT (tvar a))
   pure (extract empty' :< Unlist empty' full' list')
 
-check :: Term -> PartialType -> Elab PartialElabTerm
+check :: Term -> PartialType -> Elab (AnnotatedTerm PartialType)
 check term ty = do
   term' <- infer term
   termTy <- unify (extract term') ty
   pure (termTy :< unwrap term')
 
 
-erase :: PartialElabTerm -> Term
+erase :: AnnotatedTerm PartialType -> Term
 erase = cata (Fix . tailF)
 
 
