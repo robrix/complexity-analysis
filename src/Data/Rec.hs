@@ -3,7 +3,7 @@ module Data.Rec where
 
 import Data.Bifunctor
 import Data.Functor.Classes
-import Data.Functor.Foldable (Base)
+import Data.Functor.Foldable (Base, Recursive(..))
 
 newtype Rec expr a = Rec (expr a (Rec expr a))
 
@@ -23,3 +23,5 @@ instance Bifunctor expr => Functor (Rec expr) where
   fmap f = go where go = Rec . bimap f go . unRec
 
 type instance Base (Rec expr a) = expr a
+
+instance Functor (expr a) => Recursive (Rec expr a) where project = unRec
