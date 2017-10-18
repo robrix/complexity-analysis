@@ -41,7 +41,7 @@ out :: Ann f a -> f (Ann f a)
 out (In _ o) = o
 
 data AnnF f a b = InF a (f b)
-  deriving (Foldable, Functor, Traversable)
+  deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
 annF :: AnnF f a b -> a
 annF (InF a _) = a
