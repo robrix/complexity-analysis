@@ -8,3 +8,9 @@ foldr = rec (\ foldr -> lam (\ combine -> lam (\ seed -> lam (\ list -> unlist s
 
 foldrT :: PartialType
 foldrT = forAllT (\ each -> forAllT (\ result -> (each .-> result .-> result) .-> result .-> listT each .-> result))
+
+-- $
+-- >>> import Analysis.Elaboration
+-- >>> import Control.Comonad (extract)
+-- >>> () <$ partialToTotal (fst (runElab (elaborate Analysis.Examples.foldr >>= unify Analysis.Examples.foldrT . extract)))
+-- Right ()
