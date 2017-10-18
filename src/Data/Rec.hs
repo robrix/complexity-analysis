@@ -19,6 +19,8 @@ class Embeddable f t | t -> f where
 class Embeddable1 f t | t -> f where
   emb1 :: f a -> t a
 
+  withEmb1 :: (f a -> b) -> t a -> Maybe b
+
 instance Embeddable f (Fix f) where
   emb = Fix
 
