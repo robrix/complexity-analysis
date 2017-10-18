@@ -43,6 +43,10 @@ out (In _ o) = o
 data AnnF f a b = InF a (f b)
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
+instance (Eq1   expr, Eq   ann) => Eq1   (AnnF expr ann) where liftEq        = genericLiftEq
+instance (Ord1  expr, Ord  ann) => Ord1  (AnnF expr ann) where liftCompare   = genericLiftCompare
+instance (Show1 expr, Show ann) => Show1 (AnnF expr ann) where liftShowsPrec = genericLiftShowsPrec
+
 annF :: AnnF f a b -> a
 annF (InF a _) = a
 
