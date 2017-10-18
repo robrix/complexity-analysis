@@ -163,10 +163,6 @@ instance Embeddable1 expr (Partial expr error) where
   withEmb1 f (Cont expr) = Just (f expr)
   withEmb1 _ _           = Nothing
 
-instance Unembeddable1 expr (Partial expr error) where
-  unemb1 (Cont expr) = Just expr
-  unemb1 (Stop _)    = Nothing
-
 -- $setup
 -- >>> import Test.QuickCheck
 -- >>> instance Arbitrary Name where arbitrary = Name <$> arbitrary
