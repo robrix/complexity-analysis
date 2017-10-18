@@ -4,11 +4,8 @@ module Control.Monad.Fresh where
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Bifunctor (first)
-import Data.FreeTypeVariables
 import Data.Functor.Identity
 import Data.Name
-import qualified Data.Set as Set
-import Data.Subst
 
 class Monad monad => MonadFresh monad where
   fresh :: monad Name
