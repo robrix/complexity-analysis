@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
 module Data.Expr where
 
 import Data.Functor.Classes.Generic
@@ -130,7 +130,7 @@ unlist empty full list = Fix (Unlist empty full list)
 instance (Substitutable ty ann, Functor expr) => Substitutable ty (Rec (Ann expr) ann) where
   substitute subst (Rec (In ann expr)) = Rec (In (substitute subst ann) (fmap (substitute subst) expr))
 
-instance Monoid ann => Embeddable1 expr (Ann expr ann) where
-  emb1 = In mempty
+instance (Monoid ann, Embeddable1 expr functor) => Embeddable1 expr (Ann functor ann) where
+  emb1 = In mempty . emb1
 
-  unemb1 = Just . exprF
+  unemb1 = unemb1 . exprF
