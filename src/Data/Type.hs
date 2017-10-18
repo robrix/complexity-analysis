@@ -48,11 +48,11 @@ partialToTotal = iter (fmap Fix . sequenceA) . fmap (Left . pure)
 tvar :: Name -> PartialType
 tvar name = wrap (TVar name)
 
-makeForAll :: Name -> PartialType -> PartialType
-makeForAll name body = wrap (ForAll name body)
+makeForAllT :: Name -> PartialType -> PartialType
+makeForAllT name body = wrap (ForAll name body)
 
 forAllT :: (PartialType -> PartialType) -> PartialType
-forAllT hoas = makeForAll n body
+forAllT hoas = makeForAllT n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (tvar n)
 
