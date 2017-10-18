@@ -22,7 +22,7 @@ data Type a
   | List a
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
-infixr 0 :->
+infixr 1 :->
 infixl 7 :*
 
 instance Eq1 Type where liftEq = genericLiftEq
@@ -94,7 +94,7 @@ specialize orig         _  = cont orig
 (.->) :: Rec (Partial Type) error -> Rec (Partial Type) error -> Rec (Partial Type) error
 arg .-> ret = cont (arg :-> ret)
 
-infixr 0 .->
+infixr 1 .->
 
 unitT :: Rec (Partial Type) error
 unitT = cont Unit
