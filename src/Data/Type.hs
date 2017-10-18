@@ -56,7 +56,7 @@ instance Show1 ty => Show1 (Partial ty) where liftShowsPrec = genericLiftShowsPr
 totalToPartial :: Total Type -> Fix (Partial Type)
 totalToPartial = cata emb
 
-partialToTotal :: Fix (Partial Type) -> Either [Error (Fix (Partial Type))] (Total Type)
+partialToTotal :: Traversable ty => Fix (Partial ty) -> Either [Error (Fix (Partial ty))] (Total ty)
 partialToTotal = para (\ partial -> case partial of
   Cont ty   -> fmap Fix (traverse snd ty)
   Fault err -> Left [fmap fst err])
