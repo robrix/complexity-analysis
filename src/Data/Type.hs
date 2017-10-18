@@ -52,10 +52,10 @@ instance Functor expr => Recursive (Partial expr error) where
   project (Stop err)      = StopF err
 
 
-totalToPartial :: Total Type -> Partial Type Error
+totalToPartial :: Total Type -> Partial Type error
 totalToPartial = cata Continue
 
-partialToTotal :: Partial Type Error -> Either [Error] (Total Type)
+partialToTotal :: Partial Type error -> Either [error] (Total Type)
 partialToTotal = cata (\ partial -> case partial of
   ContinueF expr -> fmap Fix (sequenceA expr)
   StopF err      -> Left [err])
