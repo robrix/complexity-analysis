@@ -2,6 +2,7 @@
 module Data.Subst where
 
 import Data.Bifunctor (second)
+import Data.Functor.Foldable (Fix(..))
 import Data.Name
 import Data.Semigroup (Semigroup(..))
 
@@ -53,3 +54,6 @@ class Substitutable1 ty value where
 instance Substitutable ty ty => Substitutable ty (Subst ty) where
   substitute subst = Subst . map (second (substitute subst)) . filter (flip notElem vars . fst) . getSubst
     where vars = substVars subst
+
+instance Substitutable1 ty expr => Substitutable ty (Fix expr) where
+  substitute subst (Fix expr) = Fix (liftSubstitute substitute subst expr)
