@@ -14,3 +14,7 @@ foldrT = forAllT (\ each -> forAllT (\ result -> (each .-> result .-> result) .-
 -- >>> import Control.Comonad (extract)
 -- >>> () <$ partialToTotal (fst (runElab (elaborate Analysis.Examples.foldr >>= unify Analysis.Examples.foldrT . extract)))
 -- Right ()
+
+
+map :: Term
+map = rec (\ map -> lam (\ f -> lam (\ list -> unlist nil (lam (\ a -> lam (\ as -> cons (f # a) (map # f # as)))) list)))
