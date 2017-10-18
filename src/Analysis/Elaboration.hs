@@ -18,14 +18,14 @@ type Elab = StateT (Subst (Partial Type Error)) (ReaderT (Env Name) Fresh)
 runElab :: Elab a -> (a, Subst (Partial Type Error))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-elaborate :: Term -> Elab (Ann Expr (Partial Type Error))
+elaborate :: Term Expr -> Elab (Ann Expr (Partial Type Error))
 elaborate term = do
   term' <- infer term
   subst <- get
   let In ty tm = substitute subst term'
   pure (In (generalize ty) tm)
 
-infer :: Term -> Elab (Ann Expr (Partial Type Error))
+infer :: Term Expr -> Elab (Ann Expr (Partial Type Error))
 infer (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (envExtend n t) (infer b)
@@ -76,7 +76,7 @@ infer (Fix (Unlist empty full list)) = do
   list' <- check list (listT (tvar a))
   pure (In (ann empty') (Unlist empty' full' list'))
 
-check :: Term -> Partial Type Error -> Elab (Ann Expr (Partial Type Error))
+check :: Term Expr -> Partial Type Error -> Elab (Ann Expr (Partial Type Error))
 check term ty = do
   term' <- infer term
   termTy <- unify (ann term') ty

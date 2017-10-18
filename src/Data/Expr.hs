@@ -27,7 +27,7 @@ instance Eq1 Expr where liftEq = genericLiftEq
 instance Ord1 Expr where liftCompare = genericLiftCompare
 instance Show1 Expr where liftShowsPrec = genericLiftShowsPrec
 
-type Term = Fix Expr
+type Term = Fix
 
 data Ann expr ann = In ann (expr (Ann expr ann))
 deriving instance (Eq   (expr (Ann expr ann)), Eq   ann) => Eq   (Ann expr ann)
@@ -61,7 +61,7 @@ erase :: Functor expr => Ann expr ann -> Fix expr
 erase = cata (Fix . outF)
 
 
-makeAbs :: Name -> Term -> Term
+makeAbs :: Name -> Term Expr -> Term Expr
 makeAbs name body = Fix (Abs name body)
 
 -- | Construct a 'Term' for a function using the supplied function to construct the body.
@@ -72,65 +72,65 @@ makeAbs name body = Fix (Abs name body)
 --   Fix (Abs (Name 0) (Fix (Var (Name 0))))
 --   >>> lam (\ x -> lam (const x))
 --   Fix (Abs (Name 1) (Fix (Abs (Name 0) (Fix (Var (Name 1))))))
-lam :: (Term -> Term) -> Term
+lam :: (Term Expr -> Term Expr) -> Term Expr
 lam hoas = makeAbs n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (var n)
 
-maxBoundVariable :: Term -> Maybe Name
+maxBoundVariable :: Term Expr -> Maybe Name
 maxBoundVariable = cata $ \ expr -> case expr of
   Abs name _ -> Just name
   _          -> foldr max Nothing expr
 
-var :: Name -> Term
+var :: Name -> Term Expr
 var name = Fix (Var name)
 
-(#) :: Term -> Term -> Term
+(#) :: Term Expr -> Term Expr -> Term Expr
 func # arg = Fix (App func arg)
 
 infixl 9 #
 
 
-makeRec :: Name -> Term -> Term
+makeRec :: Name -> Term Expr -> Term Expr
 makeRec name body = Fix (Rec name body)
 
-rec :: (Term -> Term) -> Term
+rec :: (Term Expr -> Term Expr) -> Term Expr
 rec hoas = makeRec n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (var n)
 
 
-unit :: Term
+unit :: Term Expr
 unit = Fix Unit
 
-pair :: Term -> Term -> Term
+pair :: Term Expr -> Term Expr -> Term Expr
 pair fst snd = Fix (Pair fst snd)
 
-tuple :: [Term] -> Term
+tuple :: [Term Expr] -> Term Expr
 tuple = foldr pair unit
 
-pfst :: Term -> Term
+pfst :: Term Expr -> Term Expr
 pfst pair = Fix (Fst pair)
 
-psnd :: Term -> Term
+psnd :: Term Expr -> Term Expr
 psnd pair = Fix (Snd pair)
 
-bool :: Bool -> Term
+bool :: Bool -> Term Expr
 bool b = Fix (Bool b)
 
-iff :: Term -> Term -> Term -> Term
+iff :: Term Expr -> Term Expr -> Term Expr -> Term Expr
 iff c t e = Fix (If c t e)
 
-cons :: Term -> Term -> Term
+cons :: Term Expr -> Term Expr -> Term Expr
 cons head tail = Fix (Cons head tail)
 
-nil :: Term
+nil :: Term Expr
 nil = Fix Nil
 
-list :: [Term] -> Term
+list :: [Term Expr] -> Term Expr
 list = foldr cons nil
 
-unlist :: Term -> Term -> Term -> Term
+unlist :: Term Expr -> Term Expr -> Term Expr -> Term Expr
 unlist empty full list = Fix (Unlist empty full list)
 
 
