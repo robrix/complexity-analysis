@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, FunctionalDependencies, PolyKinds, TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances, FunctionalDependencies, PolyKinds, TypeFamilies, UndecidableInstances #-}
 module Data.Rec where
 
 import Data.Bifoldable
@@ -23,7 +23,7 @@ class Embeddable1 f t | t -> f where
 
   unemb1 :: t a -> Maybe (f a)
 
-instance Embeddable1 expr (wrap expr) => Embeddable expr (Fix (wrap expr)) where
+instance Embeddable1 expr wrap => Embeddable expr (Fix wrap) where
   emb = Fix . emb1
 
   unemb = unemb1 . unfix
