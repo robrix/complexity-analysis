@@ -18,3 +18,6 @@ foldrT = forAllT (\ each -> forAllT (\ result -> (each .-> result .-> result) .-
 
 map :: Term
 map = rec (\ map -> lam (\ f -> lam (\ list -> unlist nil (lam (\ a -> lam (\ as -> cons (f # a) (map # f # as)))) list)))
+
+mapT :: PartialType
+mapT = forAllT (\ element -> forAllT (\ mapped -> (element .-> mapped) .-> listT element .-> listT mapped))
