@@ -133,4 +133,4 @@ instance (Substitutable ty ann, Functor expr) => Substitutable ty (Rec (Ann expr
 instance Monoid ann => Embeddable1 expr (Ann expr ann) where
   emb1 = In mempty
 
-  withEmb1 f = Just . f . exprF
+  unemb1 = Just . exprF

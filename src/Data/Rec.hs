@@ -5,7 +5,7 @@ import Data.Bifoldable
 import Data.Bifunctor
 import Data.Bitraversable
 import Data.Functor.Classes
-import Data.Functor.Foldable (Base, Corecursive(..), Recursive(..), Fix(..))
+import Data.Functor.Foldable (Base, Corecursive(..), Recursive(..), Fix(..), unfix)
 
 newtype Rec expr a = Rec (expr a (Rec expr a))
 
@@ -16,22 +16,22 @@ unRec (Rec expr) = expr
 class Embeddable f t | t -> f where
   emb :: f t -> t
 
-  withEmb :: (f t -> b) -> t -> Maybe b
+  unemb :: t -> Maybe (f t)
 
 class Embeddable1 f t | t -> f where
   emb1 :: f a -> t a
 
-  withEmb1 :: (f a -> b) -> t a -> Maybe b
+  unemb1 :: t a -> Maybe (f a)
 
 instance Embeddable f (Fix f) where
   emb = Fix
 
-  withEmb f (Fix expr) = Just (f expr)
+  unemb = Just . unfix
 
 instance Embeddable1 expr (wrap expr a) => Embeddable expr (Rec (wrap expr) a) where
   emb = Rec . emb1
 
-  withEmb f = withEmb1 f . unRec
+  unemb = unemb1 . unRec
 
 
 instance (Eq1 (expr a), Eq a) => Eq (Rec expr a) where

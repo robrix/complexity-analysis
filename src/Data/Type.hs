@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables #-}
 module Data.Type where
 
-import Control.Monad (join)
 import Data.Bifunctor
 import Data.Either (fromLeft)
 import Data.FreeTypeVariables
@@ -71,9 +70,9 @@ forAllT hoas = makeForAllT n body
         body = hoas (tvar n)
 
 maxBoundVariable :: (Recursive t, Embeddable1 Type (Base t)) => t -> Maybe Name
-maxBoundVariable = cata (join . withEmb1 (\ partial -> case partial of
+maxBoundVariable = cata (maybe Nothing (\ partial -> case partial of
   ForAll name _ -> Just name
-  expr          -> foldr max Nothing expr))
+  expr          -> foldr max Nothing expr) . unemb1)
 
 -- | Generalize a type by binding its free variables with foralls.
 --
@@ -166,13 +165,13 @@ instance Functor expr => Bifunctor (Partial expr) where
 instance Embeddable1 expr (Partial expr error) where
   emb1 = Cont
 
-  withEmb1 f (Cont expr) = Just (f expr)
-  withEmb1 _ _           = Nothing
+  unemb1 (Cont expr) = Just expr
+  unemb1 _           = Nothing
 
 instance Embeddable1 Type Type where
   emb1 = id
 
-  withEmb1 f = Just . f
+  unemb1 = Just
 
 -- $setup
 -- >>> import Test.QuickCheck
