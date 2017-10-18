@@ -40,8 +40,14 @@ ann (In a _) = a
 out :: Ann f a -> f (Ann f a)
 out (In _ o) = o
 
-data AnnF f a b = InF { annF :: a, outF :: f b }
+data AnnF f a b = InF a (f b)
   deriving (Foldable, Functor, Traversable)
+
+annF :: AnnF f a b -> a
+annF (InF a _) = a
+
+outF :: AnnF f a b -> f b
+outF (InF _ o) = o
 
 type instance Base (Ann f a) = AnnF f a
 instance Functor f => Recursive (Ann f a) where project (In a o) = InF a o
