@@ -139,6 +139,11 @@ instance Substitutable PartialType Error where
   substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
   substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
 
+instance Functor expr => Functor (Partial expr) where
+  fmap f = go
+    where go (Continue expr) = Continue (fmap go expr)
+          go (Stop err)      = Stop (f err)
+
 -- $setup
 -- >>> import Test.QuickCheck
 -- >>> instance Arbitrary Name where arbitrary = Name <$> arbitrary
