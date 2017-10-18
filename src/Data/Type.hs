@@ -45,6 +45,10 @@ deriving instance (Show (f (Partial f a)), Show a) => Show (Partial f a)
 data PartialF expr error recur = ContinueF (expr recur) | StopF error
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
+instance (Eq1   expr, Eq   ann) => Eq1   (PartialF expr ann) where liftEq        = genericLiftEq
+instance (Ord1  expr, Ord  ann) => Ord1  (PartialF expr ann) where liftCompare   = genericLiftCompare
+instance (Show1 expr, Show ann) => Show1 (PartialF expr ann) where liftShowsPrec = genericLiftShowsPrec
+
 type instance Base (Partial expr error) = PartialF expr error
 
 instance Functor expr => Recursive (Partial expr error) where
