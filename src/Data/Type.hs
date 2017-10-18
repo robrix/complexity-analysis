@@ -1,11 +1,11 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, StandaloneDeriving, UndecidableInstances #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, StandaloneDeriving, TypeFamilies, UndecidableInstances #-}
 module Data.Type where
 
 import Control.Monad.Free
 import Data.Either (fromLeft)
 import Data.FreeTypeVariables
 import Data.Functor.Classes.Generic
-import Data.Functor.Foldable (Recursive(..), Fix(..))
+import Data.Functor.Foldable (Base, Fix(..), Recursive(..))
 import Data.Name
 import qualified Data.Set as Set
 import Data.Subst
@@ -45,6 +45,8 @@ deriving instance (Show (f (Partial f a)), Show a) => Show (Partial f a)
 
 data PartialF expr error recur = ContinueF (expr recur) | StopF error
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
+
+type instance Base (Partial expr error) = PartialF expr error
 
 
 totalToPartial :: TotalType -> PartialType
