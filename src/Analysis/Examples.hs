@@ -20,6 +20,10 @@ map = rec (\ map -> lam (\ f -> lam (\ list -> unlist nil (lam (\ a -> lam (\ as
 mapT :: PartialType
 mapT = forAllT (\ element -> forAllT (\ mapped -> (element .-> mapped) .-> listT element .-> listT mapped))
 
+-- $
+-- >>> () <$ partialToTotal (fst (runElab (elaborate Analysis.Examples.map >>= unify Analysis.Examples.mapT . extract)))
+-- Right ()
+
 
 -- $setup
 -- >>> import Analysis.Elaboration
