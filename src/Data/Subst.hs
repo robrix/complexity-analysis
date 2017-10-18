@@ -20,7 +20,7 @@ newtype Subst value = Subst { getSubst :: [(Name, value)] }
 -- >>> substitute (s1 <> s2 <> s3) t == foldr substitute t [ s1, s2, s3 ]
 -- True
 -- >>> substitute (s1 <> s2 <> s3) t
--- Free (Free Unit :-> Free (Free Bool :-> Free (Free Unit :* Free Bool)))
+-- Continue (Continue Unit :-> Continue (Continue Bool :-> Continue (Continue Unit :* Continue Bool)))
 instance Substitutable value value => Semigroup (Subst value) where
   s1 <> s2 = Subst (getSubst s1 ++ getSubst (substitute s1 s2))
 
