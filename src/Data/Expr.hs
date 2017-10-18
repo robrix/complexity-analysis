@@ -4,6 +4,7 @@ module Data.Expr where
 import Data.Functor.Classes.Generic
 import Data.Functor.Foldable (Fix(..), cata)
 import Data.Name
+import Data.Rec
 import Data.Subst
 import GHC.Generics
 
@@ -11,7 +12,7 @@ data Expr a
   = Abs Name a
   | Var Name
   | App a a
-  | Rec Name a
+  | LetRec Name a
   | Unit
   | Pair a a
   | Fst a
@@ -36,11 +37,11 @@ instance (Eq1   expr, Eq   ann) => Eq1   (Ann expr ann) where liftEq        = ge
 instance (Ord1  expr, Ord  ann) => Ord1  (Ann expr ann) where liftCompare   = genericLiftCompare
 instance (Show1 expr, Show ann) => Show1 (Ann expr ann) where liftShowsPrec = genericLiftShowsPrec
 
-ann :: Term (Ann expr ann) -> ann
-ann (Fix (In ann _)) = ann
+ann :: Rec (Ann expr) ann -> ann
+ann (Rec (In ann _)) = ann
 
-expr :: Term (Ann expr ann) -> expr (Term (Ann expr ann))
-expr (Fix (In _ expr)) = expr
+expr :: Rec (Ann expr) ann -> expr (Rec (Ann expr) ann)
+expr (Rec (In _ expr)) = expr
 
 annF :: Ann expr ann recur -> ann
 annF (In ann _) = ann
@@ -83,11 +84,11 @@ func # arg = Fix (App func arg)
 infixl 9 #
 
 
-makeRec :: Name -> Term Expr -> Term Expr
-makeRec name body = Fix (Rec name body)
+makeLetRec :: Name -> Term Expr -> Term Expr
+makeLetRec name body = Fix (LetRec name body)
 
-rec :: (Term Expr -> Term Expr) -> Term Expr
-rec hoas = makeRec n body
+letRec :: (Term Expr -> Term Expr) -> Term Expr
+letRec hoas = makeLetRec n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (var n)
 
@@ -126,5 +127,5 @@ unlist :: Term Expr -> Term Expr -> Term Expr -> Term Expr
 unlist empty full list = Fix (Unlist empty full list)
 
 
-instance (Substitutable ty ann, Functor expr) => Substitutable ty (Fix (Ann expr ann)) where
-  substitute subst (Fix (In ann expr)) = Fix (In (substitute subst ann) (fmap (substitute subst) expr))
+instance (Substitutable ty ann, Functor expr) => Substitutable ty (Rec (Ann expr) ann) where
+  substitute subst (Rec (In ann expr)) = Rec (In (substitute subst ann) (fmap (substitute subst) expr))
