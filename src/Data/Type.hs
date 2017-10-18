@@ -44,9 +44,9 @@ data Partial ty error recur = Cont (ty recur) | Fault error
 fault :: error -> Rec (Partial ty) error
 fault = Rec . Fault
 
-instance (Eq1   ty, Eq   ann) => Eq1   (Partial ty ann) where liftEq        = genericLiftEq
-instance (Ord1  ty, Ord  ann) => Ord1  (Partial ty ann) where liftCompare   = genericLiftCompare
-instance (Show1 ty, Show ann) => Show1 (Partial ty ann) where liftShowsPrec = genericLiftShowsPrec
+instance (Eq1   ty, Eq   error) => Eq1   (Partial ty error) where liftEq        = genericLiftEq
+instance (Ord1  ty, Ord  error) => Ord1  (Partial ty error) where liftCompare   = genericLiftCompare
+instance (Show1 ty, Show error) => Show1 (Partial ty error) where liftShowsPrec = genericLiftShowsPrec
 
 
 totalToPartial :: Total Type -> Rec (Partial Type) error
