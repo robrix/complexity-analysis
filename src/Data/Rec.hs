@@ -1,4 +1,4 @@
-{-# LANGUAGE PolyKinds, TypeFamilies #-}
+{-# LANGUAGE FunctionalDependencies, PolyKinds, TypeFamilies #-}
 module Data.Rec where
 
 import Data.Bifoldable
@@ -12,6 +12,9 @@ newtype Rec expr a = Rec (expr a (Rec expr a))
 unRec :: Rec expr a -> expr a (Rec expr a)
 unRec (Rec expr) = expr
 
+
+class Embeddable f t | t -> f where
+  emb :: f t -> t
 instance (Eq1 (expr a), Eq a) => Eq (Rec expr a) where
   Rec expr1 == Rec expr2 = liftEq (==) expr1 expr2
 
