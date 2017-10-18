@@ -1,7 +1,9 @@
+{-# LANGUAGE TypeFamilies #-}
 module Data.Rec where
 
 import Data.Bifunctor
 import Data.Functor.Classes
+import Data.Functor.Foldable (Base)
 
 newtype Rec expr a = Rec (expr a (Rec expr a))
 
@@ -19,3 +21,5 @@ instance (Show1 (expr a), Show a) => Show (Rec expr a) where
 
 instance Bifunctor expr => Functor (Rec expr) where
   fmap f = go where go = Rec . bimap f go . unRec
+
+type instance Base (Rec expr a) = expr a
