@@ -34,7 +34,7 @@ data Error
   deriving (Eq, Ord, Read, Show)
 
 type PartialType = Partial Type Error
-type TotalType = Fix Type
+type Total = Fix
 
 
 data Partial expr error = Continue (expr (Partial expr error)) | Stop error
@@ -53,10 +53,10 @@ instance Functor expr => Recursive (Partial expr error) where
   project (Stop err)      = StopF err
 
 
-totalToPartial :: TotalType -> PartialType
+totalToPartial :: Total Type -> PartialType
 totalToPartial = cata Continue
 
-partialToTotal :: PartialType -> Either [Error] TotalType
+partialToTotal :: PartialType -> Either [Error] (Total Type)
 partialToTotal = cata (\ partial -> case partial of
   ContinueF expr -> fmap Fix (sequenceA expr)
   StopF err      -> Left [err])
