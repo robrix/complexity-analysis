@@ -35,6 +35,9 @@ class Unembeddable1 f t | t -> f where
 instance Unembeddable f (Fix f) where
   unemb = Just . unfix
 
+instance Unembeddable1 expr (wrap expr a) => Unembeddable expr (Rec (wrap expr) a) where
+  unemb = unemb1 . unRec
+
 
 instance (Eq1 (expr a), Eq a) => Eq (Rec expr a) where
   Rec expr1 == Rec expr2 = liftEq (==) expr1 expr2
