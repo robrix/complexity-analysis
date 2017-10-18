@@ -80,10 +80,10 @@ maxBoundVariable = cata (\ partial -> case partial of
 
 -- | Generalize a type by binding its free variables with foralls.
 --
--- >>> generalize unitT
+-- >>> generalize unitT :: Partial Type Error
 -- Continue Unit
 --
--- prop> \ v -> generalize (tvar v .-> tvar v) == forAllT (\ t -> t .-> t)
+-- prop> \ v -> generalize (tvar v .-> tvar v) == forAllT (\ t -> t .-> t :: Partial Type Error)
 generalize :: Substitutable (Partial Type error) error => Partial Type error -> Partial Type error
 generalize ty = foldr (\ v ty -> forAllT (\ new -> substitute (substSingleton v new) ty)) ty (Set.toList (freeTypeVariables ty))
 
