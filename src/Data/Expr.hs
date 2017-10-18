@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleInstances, MultiParamTypeClasses, StandaloneDeriving, TypeFamilies, UndecidableInstances #-}
 module Data.Expr where
 
 import Data.Functor.Classes.Generic
@@ -30,6 +30,10 @@ instance Show1 Expr where liftShowsPrec = genericLiftShowsPrec
 type Term = Fix Expr
 
 data Ann f a = In { ann :: a, out :: f (Ann f a) }
+deriving instance (Eq   (f (Ann f a)), Eq   a) => Eq   (Ann f a)
+deriving instance (Ord  (f (Ann f a)), Ord  a) => Ord  (Ann f a)
+deriving instance (Show (f (Ann f a)), Show a) => Show (Ann f a)
+
 data AnnF f a b = InF { annF :: a, outF :: f b }
   deriving (Foldable, Functor, Traversable)
 
