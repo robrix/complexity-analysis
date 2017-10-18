@@ -1,8 +1,8 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleInstances, MultiParamTypeClasses, StandaloneDeriving, TypeFamilies, UndecidableInstances #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleInstances, MultiParamTypeClasses #-}
 module Data.Expr where
 
 import Data.Functor.Classes.Generic
-import Data.Functor.Foldable (Base, Fix(..), Recursive(..))
+import Data.Functor.Foldable (Fix(..), cata)
 import Data.Name
 import Data.Subst
 import GHC.Generics
@@ -29,36 +29,28 @@ instance Show1 Expr where liftShowsPrec = genericLiftShowsPrec
 
 type Term = Fix
 
-data Ann expr ann = In ann (expr (Ann expr ann))
-deriving instance (Eq   (expr (Ann expr ann)), Eq   ann) => Eq   (Ann expr ann)
-deriving instance (Ord  (expr (Ann expr ann)), Ord  ann) => Ord  (Ann expr ann)
-deriving instance (Show (expr (Ann expr ann)), Show ann) => Show (Ann expr ann)
-
-ann :: Ann expr ann -> ann
-ann (In ann _) = ann
-
-out :: Ann expr ann -> expr (Ann expr ann)
-out (In _ expr) = expr
-
-data AnnF expr ann recur = InF ann (expr recur)
+data Ann expr ann recur = In ann (expr recur)
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
-instance (Eq1   expr, Eq   ann) => Eq1   (AnnF expr ann) where liftEq        = genericLiftEq
-instance (Ord1  expr, Ord  ann) => Ord1  (AnnF expr ann) where liftCompare   = genericLiftCompare
-instance (Show1 expr, Show ann) => Show1 (AnnF expr ann) where liftShowsPrec = genericLiftShowsPrec
+instance (Eq1   expr, Eq   ann) => Eq1   (Ann expr ann) where liftEq        = genericLiftEq
+instance (Ord1  expr, Ord  ann) => Ord1  (Ann expr ann) where liftCompare   = genericLiftCompare
+instance (Show1 expr, Show ann) => Show1 (Ann expr ann) where liftShowsPrec = genericLiftShowsPrec
 
-annF :: AnnF expr ann recur -> ann
-annF (InF ann _) = ann
+ann :: Term (Ann expr ann) -> ann
+ann (Fix (In ann _)) = ann
 
-outF :: AnnF expr ann recur -> expr recur
-outF (InF _ expr) = expr
+expr :: Term (Ann expr ann) -> expr (Term (Ann expr ann))
+expr (Fix (In _ expr)) = expr
 
-type instance Base (Ann expr ann) = AnnF expr ann
+annF :: Ann expr ann recur -> ann
+annF (In ann _) = ann
 
-instance Functor expr => Recursive (Ann expr ann) where project (In a o) = InF a o
+exprF :: Ann expr ann recur -> expr recur
+exprF (In _ expr) = expr
 
-erase :: Functor expr => Ann expr ann -> Fix expr
-erase = cata (Fix . outF)
+
+erase :: Functor expr => Term (Ann expr ann) -> Term expr
+erase = cata (Fix . exprF)
 
 
 makeAbs :: Name -> Term Expr -> Term Expr
@@ -134,8 +126,5 @@ unlist :: Term Expr -> Term Expr -> Term Expr -> Term Expr
 unlist empty full list = Fix (Unlist empty full list)
 
 
-instance (Substitutable ann ann, Functor expr) => Substitutable ann (Ann expr ann) where
-  substitute subst (In ann expr) = In (substitute subst ann) (fmap (substitute subst) expr)
-
-instance Functor expr => Functor (Ann expr) where
-  fmap f = go where go (In ann expr) = In (f ann) (fmap go expr)
+instance (Substitutable ann ann, Functor expr) => Substitutable1 ann (Ann expr ann) where
+  liftSubstitute recur subst (In ann expr) = In (substitute subst ann) (fmap (recur subst) expr)

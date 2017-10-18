@@ -18,69 +18,69 @@ type Elab = StateT (Subst (Partial Type Error)) (ReaderT (Env Name) Fresh)
 runElab :: Elab a -> (a, Subst (Partial Type Error))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-elaborate :: Term Expr -> Elab (Ann Expr (Partial Type Error))
+elaborate :: Term Expr -> Elab (Term (Ann Expr (Partial Type Error)))
 elaborate term = do
   term' <- infer term
   subst <- get
-  let In ty tm = substitute subst term'
-  pure (In (generalize ty) tm)
+  let Fix (In ty tm) = substitute subst term'
+  pure (Fix (In (generalize ty) tm))
 
-infer :: Term Expr -> Elab (Ann Expr (Partial Type Error))
+infer :: Term Expr -> Elab (Term (Ann Expr (Partial Type Error)))
 infer (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (envExtend n t) (infer b)
-  pure (In (tvar t .-> ann b') (Abs n b'))
+  pure (Fix (In (tvar t .-> ann b') (Abs n b')))
 infer (Fix (Var name)) = do
   env <- ask
-  pure (In (maybe (Stop (FreeVariable name)) tvar (envLookup name env)) (Var name))
+  pure (Fix (In (maybe (Stop (FreeVariable name)) tvar (envLookup name env)) (Var name)))
 infer (Fix (App f a)) = do
   t <- fresh
   a' <- infer a
   f' <- check f (ann a' .-> tvar t)
-  pure (In (tvar t) (App f' a'))
+  pure (Fix (In (tvar t) (App f' a')))
 infer (Fix (Rec n b)) = do
   t <- fresh
   local (envExtend n t) (check b (tvar t))
-infer (Fix Expr.Unit) = pure (In unitT Expr.Unit)
+infer (Fix Expr.Unit) = pure (Fix (In unitT Expr.Unit))
 infer (Fix (Pair fst snd)) = do
   fst' <- infer fst
   snd' <- infer snd
-  pure (In (ann fst' .* ann snd') (Pair fst' snd'))
+  pure (Fix (In (ann fst' .* ann snd') (Pair fst' snd')))
 infer (Fix (Fst pair)) = do
   t1 <- fresh
   t2 <- fresh
   pair' <- check pair (tvar t1 .* tvar t2)
-  pure (In (tvar t1) (Fst pair'))
+  pure (Fix (In (tvar t1) (Fst pair')))
 infer (Fix (Snd pair)) = do
   t1 <- fresh
   t2 <- fresh
   pair' <- check pair (tvar t1 .* tvar t2)
-  pure (In (tvar t2) (Snd pair'))
-infer (Fix (Expr.Bool b)) = pure (In boolT (Expr.Bool b))
+  pure (Fix (In (tvar t2) (Snd pair')))
+infer (Fix (Expr.Bool b)) = pure (Fix (In boolT (Expr.Bool b)))
 infer (Fix (If c t e)) = do
   c' <- check c boolT
   t' <- infer t
   e' <- infer e
   result <- unify (ann t') (ann e')
-  pure (In result (If c' t' e'))
+  pure (Fix (In result (If c' t' e')))
 infer (Fix (Cons h t)) = do
   a <- fresh
   h' <- check h (tvar a)
   t' <- check t (listT (tvar a))
-  pure (In (listT (tvar a)) (Cons h' t'))
-infer (Fix Nil) = flip In Nil . listT . tvar <$> fresh
+  pure (Fix (In (listT (tvar a)) (Cons h' t')))
+infer (Fix Nil) = Fix . flip In Nil . listT . tvar <$> fresh
 infer (Fix (Unlist empty full list)) = do
   a <- fresh
   empty' <- infer empty
   full' <- check full (tvar a .-> listT (tvar a) .-> ann empty')
   list' <- check list (listT (tvar a))
-  pure (In (ann empty') (Unlist empty' full' list'))
+  pure (Fix (In (ann empty') (Unlist empty' full' list')))
 
-check :: Term Expr -> Partial Type Error -> Elab (Ann Expr (Partial Type Error))
+check :: Term Expr -> Partial Type Error -> Elab (Term (Ann Expr (Partial Type Error)))
 check term ty = do
   term' <- infer term
   termTy <- unify (ann term') ty
-  pure (In termTy (out term'))
+  pure (Fix (In termTy (expr term')))
 
 
 unify :: Partial Type Error -> Partial Type Error -> Elab (Partial Type Error)
