@@ -10,8 +10,6 @@ foldrT :: PartialType
 foldrT = forAllT (\ each -> forAllT (\ result -> (each .-> result .-> result) .-> result .-> listT each .-> result))
 
 -- $
--- >>> import Analysis.Elaboration
--- >>> import Control.Comonad (extract)
 -- >>> () <$ partialToTotal (fst (runElab (elaborate Analysis.Examples.foldr >>= unify Analysis.Examples.foldrT . extract)))
 -- Right ()
 
@@ -21,3 +19,8 @@ map = rec (\ map -> lam (\ f -> lam (\ list -> unlist nil (lam (\ a -> lam (\ as
 
 mapT :: PartialType
 mapT = forAllT (\ element -> forAllT (\ mapped -> (element .-> mapped) .-> listT element .-> listT mapped))
+
+
+-- $setup
+-- >>> import Analysis.Elaboration
+-- >>> import Control.Comonad (extract)
