@@ -53,8 +53,8 @@ instance Ord1  ty => Ord1  (Partial ty) where liftCompare   = genericLiftCompare
 instance Show1 ty => Show1 (Partial ty) where liftShowsPrec = genericLiftShowsPrec
 
 
-totalToPartial :: Total Type -> Fix (Partial Type)
-totalToPartial = cata emb
+totalToPartial :: Functor ty => Total ty -> Fix (Partial ty)
+totalToPartial = cata (Fix . Cont)
 
 partialToTotal :: Traversable ty => Fix (Partial ty) -> Either [Error (Fix (Partial ty))] (Total ty)
 partialToTotal = para (\ partial -> case partial of
