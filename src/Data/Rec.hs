@@ -1,11 +1,11 @@
-{-# LANGUAGE FunctionalDependencies, PolyKinds, TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances, FunctionalDependencies, PolyKinds, TypeFamilies #-}
 module Data.Rec where
 
 import Data.Bifoldable
 import Data.Bifunctor
 import Data.Bitraversable
 import Data.Functor.Classes
-import Data.Functor.Foldable (Base, Corecursive(..), Recursive(..))
+import Data.Functor.Foldable (Base, Corecursive(..), Recursive(..), Fix(..))
 
 newtype Rec expr a = Rec (expr a (Rec expr a))
 
@@ -15,6 +15,10 @@ unRec (Rec expr) = expr
 
 class Embeddable f t | t -> f where
   emb :: f t -> t
+
+instance Embeddable f (Fix f) where
+  emb = Fix
+
 instance (Eq1 (expr a), Eq a) => Eq (Rec expr a) where
   Rec expr1 == Rec expr2 = liftEq (==) expr1 expr2
 
