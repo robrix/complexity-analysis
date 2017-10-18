@@ -116,3 +116,6 @@ unlist empty full list = Fix (Unlist empty full list)
 
 instance (Substitutable ty ty, Functor expr) => Substitutable ty (Annotated expr ty) where
   substitute subst (In a o) = In (substitute subst a) (fmap (substitute subst) o)
+
+instance Functor expr => Functor (Annotated expr) where
+  fmap f = go where go (In a o) = In (f a) (fmap go o)
