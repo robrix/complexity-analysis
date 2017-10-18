@@ -1,9 +1,9 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, UndecidableInstances #-}
 module Data.Type where
 
-import Data.Bifunctor
 import Data.Either (fromLeft)
 import Data.FreeTypeVariables
+import Data.Functor.Classes
 import Data.Functor.Classes.Generic
 import Data.Functor.Foldable (Base, Fix(..), Recursive(..))
 import Data.Name
@@ -31,28 +31,28 @@ instance Show1 Type where liftShowsPrec = genericLiftShowsPrec
 
 data Error
   = FreeVariable Name
-  | TypeMismatch (Type (Rec (Partial Type) Error)) (Type (Rec (Partial Type) Error))
-  | InfiniteType Name (Type (Rec (Partial Type) Error))
+  | TypeMismatch (Type (Fix (Partial Type))) (Type (Fix (Partial Type)))
+  | InfiniteType Name (Type (Fix (Partial Type)))
   deriving (Eq, Ord, Show)
 
 type Total = Fix
 
 
-data Partial ty error recur = Cont (ty recur) | Fault error
+data Partial ty recur = Cont (ty recur) | Fault Error
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
-fault :: error -> Rec (Partial ty) error
-fault = Rec . Fault
+fault :: Error -> Fix (Partial ty)
+fault = Fix . Fault
 
-instance (Eq1   ty, Eq   error) => Eq1   (Partial ty error) where liftEq        = genericLiftEq
-instance (Ord1  ty, Ord  error) => Ord1  (Partial ty error) where liftCompare   = genericLiftCompare
-instance (Show1 ty, Show error) => Show1 (Partial ty error) where liftShowsPrec = genericLiftShowsPrec
+instance Eq1   ty => Eq1   (Partial ty) where liftEq        = genericLiftEq
+instance Ord1  ty => Ord1  (Partial ty) where liftCompare   = genericLiftCompare
+instance Show1 ty => Show1 (Partial ty) where liftShowsPrec = genericLiftShowsPrec
 
 
-totalToPartial :: Total Type -> Rec (Partial Type) error
+totalToPartial :: Total Type -> Fix (Partial Type)
 totalToPartial = cata emb
 
-partialToTotal :: Rec (Partial Type) error -> Either [error] (Total Type)
+partialToTotal :: Fix (Partial Type) -> Either [Error] (Total Type)
 partialToTotal = cata (\ partial -> case partial of
   Cont ty   -> fmap Fix (sequenceA ty)
   Fault err -> Left [err])
@@ -121,10 +121,10 @@ prettyType d ty = cata (\ ty d -> case ty of
   List element     -> showChar '[' . element 0 . showChar ']') ty d
 
 
-instance FreeTypeVariables (Rec (Partial Type) error) where
-  freeTypeVariables = cata (freeTypeVariables . first (const (Set.empty :: Set.Set Name)))
+instance FreeTypeVariables (Fix (Partial Type)) where
+  freeTypeVariables = cata freeTypeVariables
 
-instance (FreeTypeVariables (ty recur), FreeTypeVariables error) => FreeTypeVariables (Partial ty error recur) where
+instance (FreeTypeVariables (ty recur)) => FreeTypeVariables (Partial ty recur) where
   freeTypeVariables (Cont ty)   = freeTypeVariables ty
   freeTypeVariables (Fault err) = freeTypeVariables err
 
@@ -132,6 +132,11 @@ instance FreeTypeVariables t => FreeTypeVariables (Type t) where
   freeTypeVariables (TVar name)        = Set.singleton name
   freeTypeVariables (ForAll name body) = Set.delete name (freeTypeVariables body)
   freeTypeVariables ty                 = foldMap freeTypeVariables ty
+
+instance FreeTypeVariables Error where
+  freeTypeVariables (FreeVariable _)     = mempty -- The free variable here is a term variable, not a type variable.
+  freeTypeVariables (TypeMismatch t1 t2) = freeTypeVariables t1 `mappend` freeTypeVariables t2
+  freeTypeVariables (InfiniteType n b)   = Set.insert n (freeTypeVariables b)
 
 instance FreeTypeVariables (Total Type) where
   freeTypeVariables (Fix ty) = freeTypeVariables ty
@@ -149,20 +154,16 @@ substType subst (List a)           = Left (List (substitute subst a))
 instance Substitutable (Total Type) (Total Type) where
   substitute subst (Fix ty) = either emb id (substType subst ty)
 
-instance Substitutable (Rec (Partial Type) error) error => Substitutable (Rec (Partial Type) error) (Rec (Partial Type) error) where
-  substitute subst (Rec (Cont ty))   = either emb id (substType subst ty)
-  substitute subst (Rec (Fault err)) = fault (substitute subst err)
+instance Substitutable (Fix (Partial Type)) (Fix (Partial Type)) where
+  substitute subst (Fix (Cont ty))   = either emb id (substType subst ty)
+  substitute subst (Fix (Fault err)) = fault (substitute subst err)
 
-instance Substitutable (Rec (Partial Type) Error) Error where
+instance Substitutable (Fix (Partial Type)) Error where
   substitute _     (FreeVariable name)    = FreeVariable name
   substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
   substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
 
-instance Functor ty => Bifunctor (Partial ty) where
-  bimap _ g (Cont ty)   = Cont (fmap g ty)
-  bimap f _ (Fault err) = Fault (f err)
-
-instance Embeddable1 ty functor => Embeddable1 ty (Partial functor error) where
+instance Embeddable1 ty functor => Embeddable1 ty (Partial functor) where
   emb1 = Cont . emb1
 
   unemb1 (Cont ty) = unemb1 ty

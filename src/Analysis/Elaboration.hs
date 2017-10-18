@@ -14,21 +14,21 @@ import qualified Data.Set as Set
 import Data.Subst
 import Data.Type as Type
 
-type Elab = StateT (Subst (Elaborated Type Error)) (ReaderT (Env Name) Fresh)
+type Elab = StateT (Subst (Elaborated Type)) (ReaderT (Env Name) Fresh)
 
-type Elaborated ty = Rec (Partial ty)
+type Elaborated ty = Fix (Partial ty)
 
-runElab :: Elab a -> (a, Subst (Elaborated Type Error))
+runElab :: Elab a -> (a, Subst (Elaborated Type))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-elaborate :: Term Expr -> Elab (Rec (Ann Expr) (Elaborated Type Error))
+elaborate :: Term Expr -> Elab (Rec (Ann Expr) (Elaborated Type))
 elaborate term = do
   term' <- infer term
   subst <- get
   let Rec (In ty tm) = substitute subst term'
   pure (Rec (In (generalize ty) tm))
 
-infer :: Term Expr -> Elab (Rec (Ann Expr) (Elaborated Type Error))
+infer :: Term Expr -> Elab (Rec (Ann Expr) (Elaborated Type))
 infer (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (envExtend n t) (infer b)
@@ -79,17 +79,17 @@ infer (Fix (Unlist empty full list)) = do
   list' <- check list (listT (tvar a))
   pure (Rec (In (ann empty') (Unlist empty' full' list')))
 
-check :: Term Expr -> Elaborated Type Error -> Elab (Rec (Ann Expr) (Elaborated Type Error))
+check :: Term Expr -> Elaborated Type -> Elab (Rec (Ann Expr) (Elaborated Type))
 check term ty = do
   term' <- infer term
   termTy <- unify (ann term') ty
   pure (Rec (In termTy (expr term')))
 
 
-unify :: Elaborated Type Error -> Elaborated Type Error -> Elab (Elaborated Type Error)
-unify (Rec (Fault e)) _                = pure (fault e)
-unify _               (Rec (Fault e))  = pure (fault e)
-unify (Rec (Cont t1)) (Rec (Cont t2))
+unify :: Elaborated Type -> Elaborated Type -> Elab (Elaborated Type)
+unify (Fix (Fault e)) _                = pure (fault e)
+unify _               (Fix (Fault e))  = pure (fault e)
+unify (Fix (Cont t1)) (Fix (Cont t2))
   | TVar name1 <- t1                   = bind name1 t2
   |                   TVar name2 <- t2 = bind name2 t1
   | ForAll{}   <- t1, ForAll{}   <- t2 = fresh >>= \ n -> makeForAllT n <$> unify (specialize t1 n) (specialize t2 n)
@@ -100,7 +100,7 @@ unify (Rec (Cont t1)) (Rec (Cont t2))
   | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
   | otherwise = pure (fault (TypeMismatch t1 t2))
 
-bind :: Name -> Type (Elaborated Type Error) -> Elab (Elaborated Type Error)
+bind :: Name -> Type (Elaborated Type) -> Elab (Elaborated Type)
 bind name ty
   | TVar name' <- ty, name == name'        = pure (emb ty)
   | Set.member name (freeTypeVariables ty) = pure (fault (InfiniteType name ty))
