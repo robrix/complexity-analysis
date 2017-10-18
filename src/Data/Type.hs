@@ -29,11 +29,10 @@ instance Show1 Type where liftShowsPrec = genericLiftShowsPrec
 
 data Error
   = FreeVariable Name
-  | TypeMismatch (Type PartialType) (Type PartialType)
-  | InfiniteType Name (Type PartialType)
+  | TypeMismatch (Type (Partial Type Error)) (Type (Partial Type Error))
+  | InfiniteType Name (Type (Partial Type Error))
   deriving (Eq, Ord, Read, Show)
 
-type PartialType = Partial Type Error
 type Total = Fix
 
 
@@ -53,27 +52,27 @@ instance Functor expr => Recursive (Partial expr error) where
   project (Stop err)      = StopF err
 
 
-totalToPartial :: Total Type -> PartialType
+totalToPartial :: Total Type -> Partial Type Error
 totalToPartial = cata Continue
 
-partialToTotal :: PartialType -> Either [Error] (Total Type)
+partialToTotal :: Partial Type Error -> Either [Error] (Total Type)
 partialToTotal = cata (\ partial -> case partial of
   ContinueF expr -> fmap Fix (sequenceA expr)
   StopF err      -> Left [err])
 
 
-tvar :: Name -> PartialType
+tvar :: Name -> Partial Type Error
 tvar name = Continue (TVar name)
 
-makeForAllT :: Name -> PartialType -> PartialType
+makeForAllT :: Name -> Partial Type Error -> Partial Type Error
 makeForAllT name body = Continue (ForAll name body)
 
-forAllT :: (PartialType -> PartialType) -> PartialType
+forAllT :: (Partial Type Error -> Partial Type Error) -> Partial Type Error
 forAllT hoas = makeForAllT n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (tvar n)
 
-maxBoundVariable :: PartialType -> Maybe Name
+maxBoundVariable :: Partial Type Error -> Maybe Name
 maxBoundVariable = cata (\ partial -> case partial of
   ContinueF (ForAll name _) -> Just name
   ContinueF expr            -> foldr max Nothing expr
@@ -85,37 +84,37 @@ maxBoundVariable = cata (\ partial -> case partial of
 -- Continue Unit
 --
 -- prop> \ v -> generalize (tvar v .-> tvar v) == forAllT (\ t -> t .-> t)
-generalize :: PartialType -> PartialType
+generalize :: Partial Type Error -> Partial Type Error
 generalize ty = foldr (\ v ty -> forAllT (\ new -> substitute (substSingleton v new) ty)) ty (Set.toList (freeTypeVariables ty))
 
-specialize :: Type PartialType -> Name -> PartialType
+specialize :: Type (Partial Type Error) -> Name -> Partial Type Error
 specialize (ForAll n b) to = substitute (substSingleton n (tvar to)) b
 specialize orig         _  = Continue orig
 
-(.->) :: PartialType -> PartialType -> PartialType
+(.->) :: Partial Type Error -> Partial Type Error -> Partial Type Error
 arg .-> ret = Continue (arg :-> ret)
 
 infixr 0 .->
 
-unitT :: PartialType
+unitT :: Partial Type Error
 unitT = Continue Unit
 
-(.*) :: PartialType -> PartialType -> PartialType
+(.*) :: Partial Type Error -> Partial Type Error -> Partial Type Error
 fst .* snd = Continue (fst :* snd)
 
 infixl 7 .*
 
-tupleT :: [PartialType] -> PartialType
+tupleT :: [Partial Type Error] -> Partial Type Error
 tupleT = foldr (.*) unitT
 
-boolT :: PartialType
+boolT :: Partial Type Error
 boolT = Continue Bool
 
-listT :: PartialType -> PartialType
+listT :: Partial Type Error -> Partial Type Error
 listT = Continue . List
 
 
-instance FreeTypeVariables PartialType where
+instance FreeTypeVariables (Partial Type Error) where
   freeTypeVariables = cata freeTypeVariables . ((Set.empty :: Set.Set Name) <$)
 
 instance (FreeTypeVariables (expr recur), FreeTypeVariables error) => FreeTypeVariables (PartialF expr error recur) where
@@ -137,11 +136,11 @@ substType subst (fst :* snd)       = Left (substitute subst fst :* substitute su
 substType _     Bool               = Left Bool
 substType subst (List a)           = Left (List (substitute subst a))
 
-instance Substitutable PartialType PartialType where
+instance Substitutable (Partial Type Error) (Partial Type Error) where
   substitute subst (Continue expr) = either Continue id (substType subst expr)
   substitute subst (Stop err)      = Stop (substitute subst err)
 
-instance Substitutable PartialType Error where
+instance Substitutable (Partial Type Error) Error where
   substitute _     (FreeVariable name)    = FreeVariable name
   substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
   substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
