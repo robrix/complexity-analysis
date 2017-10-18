@@ -41,8 +41,8 @@ type Total = Fix
 data Partial expr error recur = Cont (expr recur) | Stop error
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
-stop :: error -> Rec (Partial expr) error
-stop = Rec . Stop
+err :: error -> Rec (Partial expr) error
+err = Rec . Stop
 
 instance (Eq1   expr, Eq   ann) => Eq1   (Partial expr ann) where liftEq        = genericLiftEq
 instance (Ord1  expr, Ord  ann) => Ord1  (Partial expr ann) where liftCompare   = genericLiftCompare
@@ -150,8 +150,8 @@ instance Substitutable (Total Type) (Total Type) where
   substitute subst (Fix ty) = either emb id (substType subst ty)
 
 instance Substitutable (Rec (Partial Type) error) error => Substitutable (Rec (Partial Type) error) (Rec (Partial Type) error) where
-  substitute subst (Rec (Cont expr)) = either emb id (substType subst expr)
-  substitute subst (Rec (Stop err))  = stop (substitute subst err)
+  substitute subst (Rec (Cont expr))  = either emb id (substType subst expr)
+  substitute subst (Rec (Stop error)) = err (substitute subst error)
 
 instance Substitutable (Rec (Partial Type) Error) Error where
   substitute _     (FreeVariable name)    = FreeVariable name

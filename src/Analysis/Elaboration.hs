@@ -33,7 +33,7 @@ infer (Fix (Abs n b)) = do
   pure (Rec (In (tvar t .-> ann b') (Abs n b')))
 infer (Fix (Var name)) = do
   env <- ask
-  pure (Rec (In (maybe (stop (FreeVariable name)) tvar (envLookup name env)) (Var name)))
+  pure (Rec (In (maybe (err (FreeVariable name)) tvar (envLookup name env)) (Var name)))
 infer (Fix (App f a)) = do
   t <- fresh
   a' <- infer a
@@ -85,8 +85,8 @@ check term ty = do
 
 
 unify :: Rec (Partial Type) Error -> Rec (Partial Type) Error -> Elab (Rec (Partial Type) Error)
-unify (Rec (Stop e1)) _                = pure (stop e1)
-unify _               (Rec (Stop e2))  = pure (stop e2)
+unify (Rec (Stop e1)) _                = pure (err e1)
+unify _               (Rec (Stop e2))  = pure (err e2)
 unify (Rec (Cont t1)) (Rec (Cont t2))
   | TVar name1 <- t1                   = bind name1 t2
   |                   TVar name2 <- t2 = bind name2 t1
@@ -96,12 +96,12 @@ unify (Rec (Cont t1)) (Rec (Cont t2))
   | Type.Unit  <- t1, Type.Unit  <- t2 = pure unitT
   | Type.Bool  <- t1, Type.Bool  <- t2 = pure boolT
   | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
-  | otherwise = pure (stop (TypeMismatch t1 t2))
+  | otherwise = pure (err (TypeMismatch t1 t2))
 
 bind :: Name -> Type (Rec (Partial Type) Error) -> Elab (Rec (Partial Type) Error)
 bind name ty
   | TVar name' <- ty, name == name'        = pure (emb ty)
-  | Set.member name (freeTypeVariables ty) = pure (stop (InfiniteType name ty))
+  | Set.member name (freeTypeVariables ty) = pure (err (InfiniteType name ty))
   | otherwise                              = do
     subst <- get
     let ty' = substitute subst (emb ty)
