@@ -16,6 +16,8 @@ unRec (Rec expr) = expr
 class Embeddable f t | t -> f where
   emb :: f t -> t
 
+  withEmb :: (f t -> b) -> t -> Maybe b
+
 class Embeddable1 f t | t -> f where
   emb1 :: f a -> t a
 
@@ -24,8 +26,12 @@ class Embeddable1 f t | t -> f where
 instance Embeddable f (Fix f) where
   emb = Fix
 
+  withEmb f (Fix expr) = Just (f expr)
+
 instance Embeddable1 expr (wrap expr a) => Embeddable expr (Rec (wrap expr) a) where
   emb = Rec . emb1
+
+  withEmb f = withEmb1 f . unRec
 
 
 class Unembeddable f t | t -> f where
