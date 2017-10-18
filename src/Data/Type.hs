@@ -68,7 +68,7 @@ maxBoundVariable = iter (\ expr -> case expr of
 --
 -- prop> \ v -> generalize (tvar v .-> tvar v) == forAllT (\ t -> t .-> t)
 generalize :: PartialType -> PartialType
-generalize ty = foldr (\ v ty -> forAllT (\ new -> substitute (substSingleton v new) ty)) ty (Set.toList (freeTypeVariables ty))
+generalize ty = foldr (\ v -> forAllT . substitute . substSingleton v) ty (Set.toList (freeTypeVariables ty))
 
 specialize :: Type PartialType -> Name -> PartialType
 specialize (ForAll n b) to = substitute (substSingleton n (tvar to)) b
