@@ -37,6 +37,10 @@ data Error
 type PartialType = Free Type Error
 type TotalType = Fix Type
 
+
+data Partial expr error = Continue (expr (Partial expr error)) | Stop error
+
+
 totalToPartial :: TotalType -> PartialType
 totalToPartial = cata wrap
 
