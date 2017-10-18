@@ -100,9 +100,9 @@ unify (Rec (Cont t1)) (Rec (Cont t2))
 
 bind :: Name -> Type (Rec (Partial Type) Error) -> Elab (Rec (Partial Type) Error)
 bind name ty
-  | TVar name' <- ty, name == name'        = pure (cont ty)
+  | TVar name' <- ty, name == name'        = pure (emb ty)
   | Set.member name (freeTypeVariables ty) = pure (stop (InfiniteType name ty))
   | otherwise                              = do
     subst <- get
-    let ty' = substitute subst (cont ty)
+    let ty' = substitute subst (emb ty)
     maybe (put (substExtend name ty' subst) >> pure ty') (unify ty') (substLookup name subst)

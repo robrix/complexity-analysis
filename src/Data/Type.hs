@@ -53,7 +53,7 @@ instance (Show1 expr, Show ann) => Show1 (Partial expr ann) where liftShowsPrec 
 
 
 totalToPartial :: Total Type -> Rec (Partial Type) error
-totalToPartial = cata cont
+totalToPartial = cata emb
 
 partialToTotal :: Rec (Partial Type) error -> Either [error] (Total Type)
 partialToTotal = cata (\ partial -> case partial of
@@ -62,10 +62,10 @@ partialToTotal = cata (\ partial -> case partial of
 
 
 tvar :: Name -> Rec (Partial Type) error
-tvar name = cont (TVar name)
+tvar name = emb (TVar name)
 
 makeForAllT :: Name -> Rec (Partial Type) error -> Rec (Partial Type) error
-makeForAllT name body = cont (ForAll name body)
+makeForAllT name body = emb (ForAll name body)
 
 forAllT :: (Rec (Partial Type) error -> Rec (Partial Type) error) -> Rec (Partial Type) error
 forAllT hoas = makeForAllT n body
@@ -89,18 +89,18 @@ generalize ty = foldr (\ v ty -> forAllT (\ new -> substitute (substSingleton v 
 
 specialize :: forall error . Substitutable (Rec (Partial Type) error) error => Type (Rec (Partial Type) error) -> Name -> Rec (Partial Type) error
 specialize (ForAll n b) to = substitute (substSingleton n (tvar to) :: Subst (Rec (Partial Type) error)) b
-specialize orig         _  = cont orig
+specialize orig         _  = emb orig
 
 (.->) :: Rec (Partial Type) error -> Rec (Partial Type) error -> Rec (Partial Type) error
-arg .-> ret = cont (arg :-> ret)
+arg .-> ret = emb (arg :-> ret)
 
 infixr 1 .->
 
 unitT :: Rec (Partial Type) error
-unitT = cont Unit
+unitT = emb Unit
 
 (.*) :: Rec (Partial Type) error -> Rec (Partial Type) error -> Rec (Partial Type) error
-fst .* snd = cont (fst :* snd)
+fst .* snd = emb (fst :* snd)
 
 infixl 7 .*
 
@@ -108,10 +108,10 @@ tupleT :: [Rec (Partial Type) error] -> Rec (Partial Type) error
 tupleT = foldr (.*) unitT
 
 boolT :: Rec (Partial Type) error
-boolT = cont Bool
+boolT = emb Bool
 
 listT :: Rec (Partial Type) error -> Rec (Partial Type) error
-listT = cont . List
+listT = emb . List
 
 
 prettyType :: Int -> Total Type -> ShowS
@@ -148,7 +148,7 @@ substType _     Bool               = Left Bool
 substType subst (List a)           = Left (List (substitute subst a))
 
 instance Substitutable (Rec (Partial Type) error) error => Substitutable (Rec (Partial Type) error) (Rec (Partial Type) error) where
-  substitute subst (Rec (Cont expr)) = either cont id (substType subst expr)
+  substitute subst (Rec (Cont expr)) = either emb id (substType subst expr)
   substitute subst (Rec (Stop err))  = stop (substitute subst err)
 
 instance Substitutable (Rec (Partial Type) Error) Error where
