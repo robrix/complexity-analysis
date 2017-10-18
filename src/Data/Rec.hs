@@ -1,5 +1,6 @@
 module Data.Rec where
 
+import Data.Bifunctor
 import Data.Functor.Classes
 
 newtype Rec expr a = Rec (expr a (Rec expr a))
@@ -15,3 +16,6 @@ instance (Ord1 (expr a), Ord a) => Ord (Rec expr a) where
 
 instance (Show1 (expr a), Show a) => Show (Rec expr a) where
   showsPrec d (Rec expr) = showsUnaryWith (liftShowsPrec showsPrec showList) "Rec" d expr
+
+instance Bifunctor expr => Functor (Rec expr) where
+  fmap f = go where go = Rec . bimap f go . unRec
