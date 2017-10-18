@@ -147,6 +147,9 @@ substType subst (fst :* snd)       = Left (substitute subst fst :* substitute su
 substType _     Bool               = Left Bool
 substType subst (List a)           = Left (List (substitute subst a))
 
+instance Substitutable (Total Type) (Total Type) where
+  substitute subst (Fix ty) = either emb id (substType subst ty)
+
 instance Substitutable (Rec (Partial Type) error) error => Substitutable (Rec (Partial Type) error) (Rec (Partial Type) error) where
   substitute subst (Rec (Cont expr)) = either emb id (substType subst expr)
   substitute subst (Rec (Stop err))  = stop (substitute subst err)
