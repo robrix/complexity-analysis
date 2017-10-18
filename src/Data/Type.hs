@@ -114,6 +114,17 @@ listT :: Rec (Partial Type) error -> Rec (Partial Type) error
 listT = cont . List
 
 
+prettyType :: Int -> Total Type -> ShowS
+prettyType d ty = cata (\ ty d -> case ty of
+  TVar name        -> prettyName d name
+  ForAll name body -> showParen (d > 0) $ showString "∀ " . prettyName 1 name . showString " . " . body 0
+  arg :-> ret      -> showParen (d > 1) $ arg 2 . showString " -> " . ret 1
+  Unit             -> showString "Unit"
+  fst :* snd       -> showParen (d > 7) $ fst 7 . showString " * " . snd 8
+  Bool             -> showString "Bool"
+  List element     -> showChar '[' . element 0 . showChar ']') ty d
+
+
 instance FreeTypeVariables (Rec (Partial Type) error) where
   freeTypeVariables = cata (freeTypeVariables . first (const (Set.empty :: Set.Set Name)))
 
