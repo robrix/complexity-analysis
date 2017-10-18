@@ -22,6 +22,10 @@ class Embeddable1 f t | t -> f where
 instance Embeddable f (Fix f) where
   emb = Fix
 
+instance Embeddable1 expr (wrap expr a) => Embeddable expr (Rec (wrap expr) a) where
+  emb = Rec . emb1
+
+
 instance (Eq1 (expr a), Eq a) => Eq (Rec expr a) where
   Rec expr1 == Rec expr2 = liftEq (==) expr1 expr2
 
