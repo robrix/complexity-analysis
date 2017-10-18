@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeFamilies #-}
 module Data.Rec where
 
+import Data.Bifoldable
 import Data.Bifunctor
 import Data.Functor.Classes
 import Data.Functor.Foldable (Base, Corecursive(..), Recursive(..))
@@ -21,6 +22,9 @@ instance (Show1 (expr a), Show a) => Show (Rec expr a) where
 
 instance Bifunctor expr => Functor (Rec expr) where
   fmap f = go where go = Rec . bimap f go . unRec
+
+instance Bifoldable expr => Foldable (Rec expr) where
+  foldMap f = go where go = bifoldMap f go . unRec
 
 type instance Base (Rec expr a) = expr a
 
