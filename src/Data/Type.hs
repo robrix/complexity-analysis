@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Data.Type where
 
-import Control.Comonad.Cofree
 import Control.Monad.Free
 import Data.Either (fromLeft)
 import Data.FreeTypeVariables
@@ -123,9 +122,6 @@ instance Substitutable PartialType Error where
   substitute _     (FreeVariable name)    = FreeVariable name
   substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
   substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
-
-instance Functor f => Substitutable PartialType (Cofree f PartialType) where
-  substitute subst (a :< f) = substitute subst a :< fmap (substitute subst) f
 
 -- $setup
 -- >>> import Test.QuickCheck

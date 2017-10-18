@@ -1,11 +1,10 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
 module Data.Expr where
 
-import Control.Comonad.Cofree
-import Control.Comonad.Trans.Cofree (tailF)
 import Data.Functor.Classes.Generic
-import Data.Functor.Foldable (Fix(..), cata)
+import Data.Functor.Foldable (Base, Fix(..), Recursive(..))
 import Data.Name
+import Data.Subst
 import GHC.Generics
 
 data Expr a
@@ -29,10 +28,17 @@ instance Ord1 Expr where liftCompare = genericLiftCompare
 instance Show1 Expr where liftShowsPrec = genericLiftShowsPrec
 
 type Term = Fix Expr
-type AnnotatedTerm = Cofree Expr
+type AnnotatedTerm = Annotated Expr
+
+data Annotated f a = In { ann :: a, out :: f (Annotated f a) }
+data AnnotatedF f a b = InF { annF :: a, outF :: f b }
+  deriving (Foldable, Functor, Traversable)
+
+type instance Base (Annotated f a) = AnnotatedF f a
+instance Functor f => Recursive (Annotated f a) where project (In a o) = InF a o
 
 erase :: AnnotatedTerm a -> Term
-erase = cata (Fix . tailF)
+erase = cata (Fix . outF)
 
 
 makeAbs :: Name -> Term -> Term
@@ -106,3 +112,7 @@ list = foldr cons nil
 
 unlist :: Term -> Term -> Term -> Term
 unlist empty full list = Fix (Unlist empty full list)
+
+
+instance (Substitutable ty ty, Functor expr) => Substitutable ty (Annotated expr ty) where
+  substitute subst (In a o) = In (substitute subst a) (fmap (substitute subst) o)
