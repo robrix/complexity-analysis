@@ -85,9 +85,9 @@ check term ty = do
 
 
 unify :: Rec (Partial Type) Error -> Rec (Partial Type) Error -> Elab (Rec (Partial Type) Error)
-unify (Rec (Stop e1))     _               = pure (stop e1)
-unify _                   (Rec (Stop e2)) = pure (stop e2)
-unify (Rec (Continue t1)) (Rec (Continue t2))
+unify (Rec (Stop e1)) _                = pure (stop e1)
+unify _               (Rec (Stop e2))  = pure (stop e2)
+unify (Rec (Cont t1)) (Rec (Cont t2))
   | TVar name1 <- t1                   = bind name1 t2
   |                   TVar name2 <- t2 = bind name2 t1
   | ForAll{}   <- t1, ForAll{}   <- t2 = fresh >>= \ n -> makeForAllT n <$> unify (specialize t1 n) (specialize t2 n)
@@ -100,9 +100,9 @@ unify (Rec (Continue t1)) (Rec (Continue t2))
 
 bind :: Name -> Type (Rec (Partial Type) Error) -> Elab (Rec (Partial Type) Error)
 bind name ty
-  | TVar name' <- ty, name == name'        = pure (continue ty)
+  | TVar name' <- ty, name == name'        = pure (cont ty)
   | Set.member name (freeTypeVariables ty) = pure (stop (InfiniteType name ty))
   | otherwise                              = do
     subst <- get
-    let ty' = substitute subst (continue ty)
+    let ty' = substitute subst (cont ty)
     maybe (put (substExtend name ty' subst) >> pure ty') (unify ty') (substLookup name subst)
