@@ -21,7 +21,7 @@ data Expr a
   | Cons a a
   | Nil
   | Unlist a a a
-  deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
+  deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
 instance Eq1 Expr where liftEq = genericLiftEq
 instance Ord1 Expr where liftCompare = genericLiftCompare

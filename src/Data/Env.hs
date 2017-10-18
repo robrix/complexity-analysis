@@ -5,7 +5,7 @@ import Data.Name
 import Data.Semigroup
 
 newtype Env a = Env { getEnv :: [(Name, a)] }
-  deriving (Eq, Foldable, Functor, Monoid, Ord, Read, Semigroup, Show, Traversable)
+  deriving (Eq, Foldable, Functor, Monoid, Ord, Semigroup, Show, Traversable)
 
 -- $setup
 -- >>> import Test.QuickCheck

@@ -7,7 +7,7 @@ import Data.Name
 import Data.Semigroup (Semigroup(..))
 
 newtype Subst value = Subst { getSubst :: [(Name, value)] }
-  deriving (Eq, Foldable, Functor, Ord, Read, Show, Traversable)
+  deriving (Eq, Foldable, Functor, Ord, Show, Traversable)
 
 -- | Substitution composition.
 --

@@ -18,7 +18,7 @@ data Type a
   | a :* a
   | Bool
   | List a
-  deriving (Eq, Foldable, Functor, Generic1, Ord, Read, Show, Traversable)
+  deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
 infixr 0 :->
 infixl 7 :*
@@ -31,7 +31,7 @@ data Error
   = FreeVariable Name
   | TypeMismatch (Type (Partial Type Error)) (Type (Partial Type Error))
   | InfiniteType Name (Type (Partial Type Error))
-  deriving (Eq, Ord, Read, Show)
+  deriving (Eq, Ord, Show)
 
 type Total = Fix
 

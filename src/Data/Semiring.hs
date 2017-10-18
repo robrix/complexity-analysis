@@ -70,7 +70,7 @@ instance Monoid a => Semiring [a] where
 
 
 data Few = Zero | One | More
-  deriving (Bounded, Enum, Eq, Ord, Read, Show)
+  deriving (Bounded, Enum, Eq, Ord, Show)
 
 instance Semigroup Few where
   Zero <> b = b
@@ -90,7 +90,7 @@ instance Semiring Few where
 
 
 newtype Boole = Boole { getBoole :: Bool }
-  deriving (Bounded, Eq, Ord, Read, Show)
+  deriving (Bounded, Eq, Ord, Show)
 
 instance Semigroup Boole where
   Boole a <> Boole b
@@ -108,7 +108,7 @@ instance Semiring Boole where
 
 -- | A 'Semiring' over a 'Num' instance.
 newtype Arith a = Arith { getArith :: a }
-  deriving (Bounded, Eq, Num, Ord, Read, Show)
+  deriving (Bounded, Eq, Num, Ord, Show)
 
 instance Num a => Semigroup (Arith a) where
   (<>) = (+)
@@ -124,7 +124,7 @@ instance Num a => Semiring (Arith a) where
 
 -- | The multiplicative 'Monoid' taken from a 'Semiring'
 newtype Mult a = Mult { getMult :: a }
-  deriving (Bounded, Eq, Ord, Read, Show)
+  deriving (Bounded, Eq, Ord, Show)
 
 instance Semiring a => Semigroup (Mult a) where
   Mult a <> Mult b = Mult (a >< b)
