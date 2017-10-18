@@ -77,10 +77,10 @@ maxBoundVariable = cata (join . withEmb1 (\ partial -> case partial of
 
 -- | Generalize a type by binding its free variables with foralls.
 --
--- >>> generalize unitT :: Rec (Partial Type) Error
--- Cont Unit
+-- >>> generalize unitT :: Total Type
+-- Fix Unit
 --
--- prop> \ v -> generalize (tvar v .-> tvar v) == forAllT (\ t -> t .-> t :: Partial Type Error)
+-- prop> \ v -> generalize (tvar v .-> tvar v) == forAllT (\ t -> t .-> t :: Total Type)
 generalize :: (Recursive ty, Embeddable1 Type (Base ty), Embeddable Type ty, FreeTypeVariables ty, Substitutable ty ty) => ty -> ty
 generalize ty = foldr (\ v ty -> forAllT (\ new -> substitute (substSingleton v new) ty)) ty (Set.toList (freeTypeVariables ty))
 
