@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE PolyKinds, TypeFamilies #-}
 module Data.Rec where
 
 import Data.Bifoldable
