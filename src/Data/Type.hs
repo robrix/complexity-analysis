@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, StandaloneDeriving, TypeFamilies, UndecidableInstances #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, StandaloneDeriving, TypeFamilies, UndecidableInstances #-}
 module Data.Type where
 
 import Data.Either (fromLeft)
@@ -61,18 +61,18 @@ partialToTotal = cata (\ partial -> case partial of
   StopF err      -> Left [err])
 
 
-tvar :: Name -> Partial Type Error
+tvar :: Name -> Partial Type error
 tvar name = Continue (TVar name)
 
-makeForAllT :: Name -> Partial Type Error -> Partial Type Error
+makeForAllT :: Name -> Partial Type error -> Partial Type error
 makeForAllT name body = Continue (ForAll name body)
 
-forAllT :: (Partial Type Error -> Partial Type Error) -> Partial Type Error
+forAllT :: (Partial Type error -> Partial Type error) -> Partial Type error
 forAllT hoas = makeForAllT n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (tvar n)
 
-maxBoundVariable :: Partial Type Error -> Maybe Name
+maxBoundVariable :: Partial Type error -> Maybe Name
 maxBoundVariable = cata (\ partial -> case partial of
   ContinueF (ForAll name _) -> Just name
   ContinueF expr            -> foldr max Nothing expr
@@ -84,37 +84,37 @@ maxBoundVariable = cata (\ partial -> case partial of
 -- Continue Unit
 --
 -- prop> \ v -> generalize (tvar v .-> tvar v) == forAllT (\ t -> t .-> t)
-generalize :: Partial Type Error -> Partial Type Error
+generalize :: Substitutable (Partial Type error) error => Partial Type error -> Partial Type error
 generalize ty = foldr (\ v ty -> forAllT (\ new -> substitute (substSingleton v new) ty)) ty (Set.toList (freeTypeVariables ty))
 
-specialize :: Type (Partial Type Error) -> Name -> Partial Type Error
-specialize (ForAll n b) to = substitute (substSingleton n (tvar to)) b
+specialize :: forall error . Substitutable (Partial Type error) error => Type (Partial Type error) -> Name -> Partial Type error
+specialize (ForAll n b) to = substitute (substSingleton n (tvar to) :: Subst (Partial Type error)) b
 specialize orig         _  = Continue orig
 
-(.->) :: Partial Type Error -> Partial Type Error -> Partial Type Error
+(.->) :: Partial Type error -> Partial Type error -> Partial Type error
 arg .-> ret = Continue (arg :-> ret)
 
 infixr 0 .->
 
-unitT :: Partial Type Error
+unitT :: Partial Type error
 unitT = Continue Unit
 
-(.*) :: Partial Type Error -> Partial Type Error -> Partial Type Error
+(.*) :: Partial Type error -> Partial Type error -> Partial Type error
 fst .* snd = Continue (fst :* snd)
 
 infixl 7 .*
 
-tupleT :: [Partial Type Error] -> Partial Type Error
+tupleT :: [Partial Type error] -> Partial Type error
 tupleT = foldr (.*) unitT
 
-boolT :: Partial Type Error
+boolT :: Partial Type error
 boolT = Continue Bool
 
-listT :: Partial Type Error -> Partial Type Error
+listT :: Partial Type error -> Partial Type error
 listT = Continue . List
 
 
-instance FreeTypeVariables (Partial Type Error) where
+instance FreeTypeVariables (Partial Type error) where
   freeTypeVariables = cata freeTypeVariables . ((Set.empty :: Set.Set Name) <$)
 
 instance (FreeTypeVariables (expr recur), FreeTypeVariables error) => FreeTypeVariables (PartialF expr error recur) where
@@ -136,7 +136,7 @@ substType subst (fst :* snd)       = Left (substitute subst fst :* substitute su
 substType _     Bool               = Left Bool
 substType subst (List a)           = Left (List (substitute subst a))
 
-instance Substitutable (Partial Type Error) (Partial Type Error) where
+instance Substitutable (Partial Type error) error => Substitutable (Partial Type error) (Partial Type error) where
   substitute subst (Continue expr) = either Continue id (substType subst expr)
   substitute subst (Stop err)      = Stop (substitute subst err)
 
