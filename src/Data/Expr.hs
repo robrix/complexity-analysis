@@ -28,7 +28,6 @@ instance Ord1 Expr where liftCompare = genericLiftCompare
 instance Show1 Expr where liftShowsPrec = genericLiftShowsPrec
 
 type Term = Fix Expr
-type AnnotatedTerm = Ann Expr
 
 data Ann f a = In { ann :: a, out :: f (Ann f a) }
 data AnnF f a b = InF { annF :: a, outF :: f b }
@@ -37,7 +36,7 @@ data AnnF f a b = InF { annF :: a, outF :: f b }
 type instance Base (Ann f a) = AnnF f a
 instance Functor f => Recursive (Ann f a) where project (In a o) = InF a o
 
-erase :: AnnotatedTerm a -> Term
+erase :: Ann Expr a -> Term
 erase = cata (Fix . outF)
 
 
