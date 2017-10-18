@@ -29,6 +29,9 @@ instance Embeddable1 expr (wrap expr a) => Embeddable expr (Rec (wrap expr) a) w
 class Unembeddable f t | t -> f where
   unemb :: t -> Maybe (f t)
 
+class Unembeddable1 f t | t -> f where
+  unemb1 :: t a -> Maybe (f a)
+
 instance Unembeddable f (Fix f) where
   unemb = Just . unfix
 
