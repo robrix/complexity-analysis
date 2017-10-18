@@ -29,23 +29,23 @@ instance Eq1   Type where liftEq        = genericLiftEq
 instance Ord1  Type where liftCompare   = genericLiftCompare
 instance Show1 Type where liftShowsPrec = genericLiftShowsPrec
 
-data Error recur
+data Error ty recur
   = FreeVariable Name
-  | TypeMismatch (Type recur) (Type recur)
-  | InfiniteType Name (Type recur)
+  | TypeMismatch (ty recur) (ty recur)
+  | InfiniteType Name (ty recur)
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
-instance Eq1   Error where liftEq        = genericLiftEq
-instance Ord1  Error where liftCompare   = genericLiftCompare
-instance Show1 Error where liftShowsPrec = genericLiftShowsPrec
+instance Eq1   ty => Eq1   (Error ty) where liftEq        = genericLiftEq
+instance Ord1  ty => Ord1  (Error ty) where liftCompare   = genericLiftCompare
+instance Show1 ty => Show1 (Error ty) where liftShowsPrec = genericLiftShowsPrec
 
 
 type Total = Fix
 
-data Partial ty recur = Cont (ty recur) | Fault (Error recur)
+data Partial ty recur = Cont (ty recur) | Fault (Error ty recur)
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
-fault :: Error (Fix (Partial ty)) -> Fix (Partial ty)
+fault :: Error ty (Fix (Partial ty)) -> Fix (Partial ty)
 fault = Fix . Fault
 
 instance Eq1   ty => Eq1   (Partial ty) where liftEq        = genericLiftEq
@@ -56,7 +56,7 @@ instance Show1 ty => Show1 (Partial ty) where liftShowsPrec = genericLiftShowsPr
 totalToPartial :: Functor ty => Total ty -> Fix (Partial ty)
 totalToPartial = cata (Fix . Cont)
 
-partialToTotal :: Traversable ty => Fix (Partial ty) -> Either [Error (Fix (Partial ty))] (Total ty)
+partialToTotal :: Traversable ty => Fix (Partial ty) -> Either [Error ty (Fix (Partial ty))] (Total ty)
 partialToTotal = para (\ partial -> case partial of
   Cont ty   -> fmap Fix (traverse snd ty)
   Fault err -> Left [fmap fst err])
@@ -137,7 +137,7 @@ instance FreeTypeVariables t => FreeTypeVariables (Type t) where
   freeTypeVariables (ForAll name body) = Set.delete name (freeTypeVariables body)
   freeTypeVariables ty                 = foldMap freeTypeVariables ty
 
-instance FreeTypeVariables recur => FreeTypeVariables (Error recur) where
+instance FreeTypeVariables (ty recur) => FreeTypeVariables (Error ty recur) where
   freeTypeVariables (FreeVariable _)     = mempty -- The free variable here is a term variable, not a type variable.
   freeTypeVariables (TypeMismatch t1 t2) = freeTypeVariables t1 `mappend` freeTypeVariables t2
   freeTypeVariables (InfiniteType n b)   = Set.insert n (freeTypeVariables b)
@@ -162,7 +162,7 @@ instance Substitutable (Fix (Partial Type)) (Fix (Partial Type)) where
   substitute subst (Fix (Cont ty))   = either emb id (substType subst ty)
   substitute subst (Fix (Fault err)) = fault (substitute subst err)
 
-instance Substitutable ty recur => Substitutable ty (Error recur) where
+instance Substitutable ty recur => Substitutable ty (Error Type recur) where
   substitute _     (FreeVariable name)    = FreeVariable name
   substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
   substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
