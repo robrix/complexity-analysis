@@ -40,6 +40,9 @@ type TotalType = Fix Type
 
 data Partial expr error = Continue (expr (Partial expr error)) | Stop error
 
+data PartialF expr error recur = ContinueF (expr recur) | StopF error
+  deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
+
 
 totalToPartial :: TotalType -> PartialType
 totalToPartial = cata wrap
