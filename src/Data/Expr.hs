@@ -29,34 +29,35 @@ instance Show1 Expr where liftShowsPrec = genericLiftShowsPrec
 
 type Term = Fix Expr
 
-data Ann f a = In a (f (Ann f a))
-deriving instance (Eq   (f (Ann f a)), Eq   a) => Eq   (Ann f a)
-deriving instance (Ord  (f (Ann f a)), Ord  a) => Ord  (Ann f a)
-deriving instance (Show (f (Ann f a)), Show a) => Show (Ann f a)
+data Ann expr ann = In ann (expr (Ann expr ann))
+deriving instance (Eq   (expr (Ann expr ann)), Eq   ann) => Eq   (Ann expr ann)
+deriving instance (Ord  (expr (Ann expr ann)), Ord  ann) => Ord  (Ann expr ann)
+deriving instance (Show (expr (Ann expr ann)), Show ann) => Show (Ann expr ann)
 
-ann :: Ann f a -> a
-ann (In a _) = a
+ann :: Ann expr ann -> ann
+ann (In ann _) = ann
 
-out :: Ann f a -> f (Ann f a)
-out (In _ o) = o
+out :: Ann expr ann -> expr (Ann expr ann)
+out (In _ expr) = expr
 
-data AnnF f a b = InF a (f b)
+data AnnF expr ann recur = InF ann (expr recur)
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
 instance (Eq1   expr, Eq   ann) => Eq1   (AnnF expr ann) where liftEq        = genericLiftEq
 instance (Ord1  expr, Ord  ann) => Ord1  (AnnF expr ann) where liftCompare   = genericLiftCompare
 instance (Show1 expr, Show ann) => Show1 (AnnF expr ann) where liftShowsPrec = genericLiftShowsPrec
 
-annF :: AnnF f a b -> a
-annF (InF a _) = a
+annF :: AnnF expr ann recur -> ann
+annF (InF ann _) = ann
 
-outF :: AnnF f a b -> f b
-outF (InF _ o) = o
+outF :: AnnF expr ann recur -> expr recur
+outF (InF _ expr) = expr
 
-type instance Base (Ann f a) = AnnF f a
-instance Functor f => Recursive (Ann f a) where project (In a o) = InF a o
+type instance Base (Ann expr ann) = AnnF expr ann
 
-erase :: Functor expr => Ann expr a -> Fix expr
+instance Functor expr => Recursive (Ann expr ann) where project (In a o) = InF a o
+
+erase :: Functor expr => Ann expr ann -> Fix expr
 erase = cata (Fix . outF)
 
 
@@ -133,8 +134,8 @@ unlist :: Term -> Term -> Term -> Term
 unlist empty full list = Fix (Unlist empty full list)
 
 
-instance (Substitutable ty ty, Functor expr) => Substitutable ty (Ann expr ty) where
-  substitute subst (In a o) = In (substitute subst a) (fmap (substitute subst) o)
+instance (Substitutable ann ann, Functor expr) => Substitutable ann (Ann expr ann) where
+  substitute subst (In ann expr) = In (substitute subst ann) (fmap (substitute subst) expr)
 
 instance Functor expr => Functor (Ann expr) where
-  fmap f = go where go (In a o) = In (f a) (fmap go o)
+  fmap f = go where go (In ann expr) = In (f ann) (fmap go expr)
