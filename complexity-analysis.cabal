@@ -21,6 +21,7 @@ library
                      , Data.FreeTypeVariables
                      , Data.Interval
                      , Data.Name
+                     , Data.Rec
                      , Data.Semiring
                      , Data.Subst
                      , Data.Type
