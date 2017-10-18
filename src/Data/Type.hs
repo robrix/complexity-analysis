@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, StandaloneDeriving, TypeFamilies, UndecidableInstances #-}
 module Data.Type where
 
-import Control.Monad.Free
 import Data.Either (fromLeft)
 import Data.FreeTypeVariables
 import Data.Functor.Classes.Generic
@@ -34,7 +33,7 @@ data Error
   | InfiniteType Name (Type PartialType)
   deriving (Eq, Ord, Read, Show)
 
-type PartialType = Free Type Error
+type PartialType = Partial Type Error
 type TotalType = Fix Type
 
 
@@ -55,17 +54,19 @@ instance Functor expr => Recursive (Partial expr error) where
 
 
 totalToPartial :: TotalType -> PartialType
-totalToPartial = cata wrap
+totalToPartial = cata Continue
 
 partialToTotal :: PartialType -> Either [Error] TotalType
-partialToTotal = iter (fmap Fix . sequenceA) . fmap (Left . pure)
+partialToTotal = cata (\ partial -> case partial of
+  ContinueF expr -> fmap Fix (sequenceA expr)
+  StopF err      -> Left [err])
 
 
 tvar :: Name -> PartialType
-tvar name = wrap (TVar name)
+tvar name = Continue (TVar name)
 
 makeForAllT :: Name -> PartialType -> PartialType
-makeForAllT name body = wrap (ForAll name body)
+makeForAllT name body = Continue (ForAll name body)
 
 forAllT :: (PartialType -> PartialType) -> PartialType
 forAllT hoas = makeForAllT n body
@@ -73,14 +74,15 @@ forAllT hoas = makeForAllT n body
         body = hoas (tvar n)
 
 maxBoundVariable :: PartialType -> Maybe Name
-maxBoundVariable = iter (\ expr -> case expr of
-  ForAll name _ -> Just name
-  _             -> foldr max Nothing expr) . (Nothing <$)
+maxBoundVariable = cata (\ partial -> case partial of
+  ContinueF (ForAll name _) -> Just name
+  ContinueF expr            -> foldr max Nothing expr
+  StopF _                   -> Nothing)
 
 -- | Generalize a type by binding its free variables with foralls.
 --
 -- >>> generalize unitT
--- Free Unit
+-- Continue Unit
 --
 -- prop> \ v -> generalize (tvar v .-> tvar v) == forAllT (\ t -> t .-> t)
 generalize :: PartialType -> PartialType
@@ -88,18 +90,18 @@ generalize ty = foldr (\ v ty -> forAllT (\ new -> substitute (substSingleton v 
 
 specialize :: Type PartialType -> Name -> PartialType
 specialize (ForAll n b) to = substitute (substSingleton n (tvar to)) b
-specialize orig         _  = Free orig
+specialize orig         _  = Continue orig
 
 (.->) :: PartialType -> PartialType -> PartialType
-arg .-> ret = wrap (arg :-> ret)
+arg .-> ret = Continue (arg :-> ret)
 
 infixr 0 .->
 
 unitT :: PartialType
-unitT = wrap Unit
+unitT = Continue Unit
 
 (.*) :: PartialType -> PartialType -> PartialType
-fst .* snd = wrap (fst :* snd)
+fst .* snd = Continue (fst :* snd)
 
 infixl 7 .*
 
@@ -107,14 +109,18 @@ tupleT :: [PartialType] -> PartialType
 tupleT = foldr (.*) unitT
 
 boolT :: PartialType
-boolT = wrap Bool
+boolT = Continue Bool
 
 listT :: PartialType -> PartialType
-listT = wrap . List
+listT = Continue . List
 
 
 instance FreeTypeVariables PartialType where
-  freeTypeVariables = iter freeTypeVariables . (Set.empty <$)
+  freeTypeVariables = cata freeTypeVariables . ((Set.empty :: Set.Set Name) <$)
+
+instance (FreeTypeVariables (expr recur), FreeTypeVariables error) => FreeTypeVariables (PartialF expr error recur) where
+  freeTypeVariables (ContinueF expr) = freeTypeVariables expr
+  freeTypeVariables (StopF err)      = freeTypeVariables err
 
 instance FreeTypeVariables t => FreeTypeVariables (Type t) where
   freeTypeVariables (TVar name)        = Set.singleton name
@@ -132,8 +138,8 @@ substType _     Bool               = Left Bool
 substType subst (List a)           = Left (List (substitute subst a))
 
 instance Substitutable PartialType PartialType where
-  substitute subst (Free t) = either wrap id (substType subst t)
-  substitute subst (Pure a) = Pure (substitute subst a)
+  substitute subst (Continue expr) = either Continue id (substType subst expr)
+  substitute subst (Stop err)      = Stop (substitute subst err)
 
 instance Substitutable PartialType Error where
   substitute _     (FreeVariable name)    = FreeVariable name

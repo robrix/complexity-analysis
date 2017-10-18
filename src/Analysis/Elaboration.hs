@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
 module Analysis.Elaboration where
 
-import Control.Monad.Free
 import Control.Monad.Fresh
 import Control.Monad.Reader
 import Control.Monad.State
@@ -33,7 +32,7 @@ infer (Fix (Abs n b)) = do
   pure (In (tvar t .-> ann b') (Abs n b'))
 infer (Fix (Var name)) = do
   env <- ask
-  pure (In (maybe (Pure (FreeVariable name)) tvar (envLookup name env)) (Var name))
+  pure (In (maybe (Stop (FreeVariable name)) tvar (envLookup name env)) (Var name))
 infer (Fix (App f a)) = do
   t <- fresh
   a' <- infer a
@@ -85,9 +84,9 @@ check term ty = do
 
 
 unify :: PartialType -> PartialType -> Elab PartialType
-unify (Pure e1) _         = pure (Pure e1)
-unify _         (Pure e2) = pure (Pure e2)
-unify (Free t1) (Free t2)
+unify (Stop e1) _         = pure (Stop e1)
+unify _         (Stop e2) = pure (Stop e2)
+unify (Continue t1) (Continue t2)
   | TVar name1 <- t1                   = bind name1 t2
   |                   TVar name2 <- t2 = bind name2 t1
   | ForAll{}   <- t1, ForAll{}   <- t2 = fresh >>= \ n -> makeForAllT n <$> unify (specialize t1 n) (specialize t2 n)
@@ -96,13 +95,13 @@ unify (Free t1) (Free t2)
   | Type.Unit  <- t1, Type.Unit  <- t2 = pure unitT
   | Type.Bool  <- t1, Type.Bool  <- t2 = pure boolT
   | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
-  | otherwise = pure (Pure (TypeMismatch t1 t2))
+  | otherwise = pure (Stop (TypeMismatch t1 t2))
 
 bind :: Name -> Type PartialType -> Elab PartialType
 bind name ty
-  | TVar name' <- ty, name == name'        = pure (wrap ty)
-  | Set.member name (freeTypeVariables ty) = pure (Pure (InfiniteType name ty))
+  | TVar name' <- ty, name == name'        = pure (Continue ty)
+  | Set.member name (freeTypeVariables ty) = pure (Stop (InfiniteType name ty))
   | otherwise                              = do
     subst <- get
-    let ty' = substitute subst (wrap ty)
+    let ty' = substitute subst (Continue ty)
     maybe (put (substExtend name ty' subst) >> pure ty') (unify ty') (substLookup name subst)
