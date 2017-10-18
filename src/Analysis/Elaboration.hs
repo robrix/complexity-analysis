@@ -24,60 +24,60 @@ type PartialElabTerm = Cofree Expr PartialType
 runElab :: Elab a -> (a, Subst PartialType)
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-elaborate :: Term -> Elab PartialElabTerm
-elaborate (Fix (Abs n b)) = do
+infer :: Term -> Elab PartialElabTerm
+infer (Fix (Abs n b)) = do
   t <- fresh
-  b' <- local (envExtend n t) (elaborate b)
+  b' <- local (envExtend n t) (infer b)
   pure ((tvar t .-> extract b') :< Abs n b')
-elaborate (Fix (Var name)) = do
+infer (Fix (Var name)) = do
   env <- ask
   pure (maybe (Pure (FreeVariable name)) tvar (envLookup name env) :< Var name)
-elaborate (Fix (App f a)) = do
+infer (Fix (App f a)) = do
   t <- fresh
-  a' <- elaborate a
+  a' <- infer a
   f' <- check f (extract a' .-> tvar t)
   pure (tvar t :< App f' a')
-elaborate (Fix (Rec n b)) = do
+infer (Fix (Rec n b)) = do
   t <- fresh
   local (envExtend n t) (check b (tvar t))
-elaborate (Fix Expr.Unit) = pure (unitT :< Expr.Unit)
-elaborate (Fix (Pair fst snd)) = do
-  fst' <- elaborate fst
-  snd' <- elaborate snd
+infer (Fix Expr.Unit) = pure (unitT :< Expr.Unit)
+infer (Fix (Pair fst snd)) = do
+  fst' <- infer fst
+  snd' <- infer snd
   pure (extract fst' .* extract snd' :< Pair fst' snd')
-elaborate (Fix (Fst pair)) = do
+infer (Fix (Fst pair)) = do
   t1 <- fresh
   t2 <- fresh
   pair' <- check pair (tvar t1 .* tvar t2)
   pure (tvar t1 :< Fst pair')
-elaborate (Fix (Snd pair)) = do
+infer (Fix (Snd pair)) = do
   t1 <- fresh
   t2 <- fresh
   pair' <- check pair (tvar t1 .* tvar t2)
   pure (tvar t2 :< Snd pair')
-elaborate (Fix (Expr.Bool b)) = pure (boolT :< Expr.Bool b)
-elaborate (Fix (If c t e)) = do
+infer (Fix (Expr.Bool b)) = pure (boolT :< Expr.Bool b)
+infer (Fix (If c t e)) = do
   c' <- check c boolT
-  t' <- elaborate t
-  e' <- elaborate e
+  t' <- infer t
+  e' <- infer e
   result <- unify (extract t') (extract e')
   pure (result :< If c' t' e')
-elaborate (Fix (Cons h t)) = do
+infer (Fix (Cons h t)) = do
   a <- fresh
   h' <- check h (tvar a)
   t' <- check t (listT (tvar a))
   pure (listT (tvar a) :< Cons h' t')
-elaborate (Fix Nil) = (:< Nil) . listT . tvar <$> fresh
-elaborate (Fix (Unlist empty full list)) = do
+infer (Fix Nil) = (:< Nil) . listT . tvar <$> fresh
+infer (Fix (Unlist empty full list)) = do
   a <- fresh
-  empty' <- elaborate empty
+  empty' <- infer empty
   full' <- check full (tvar a .-> listT (tvar a) .-> extract empty')
   list' <- check list (listT (tvar a))
   pure (extract empty' :< Unlist empty' full' list')
 
 check :: Term -> PartialType -> Elab PartialElabTerm
 check term ty = do
-  term' <- elaborate term
+  term' <- infer term
   termTy <- unify (extract term') ty
   pure (termTy :< unwrap term')
 
