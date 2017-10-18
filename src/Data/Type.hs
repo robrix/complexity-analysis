@@ -5,7 +5,7 @@ import Data.Bifunctor
 import Data.Either (fromLeft)
 import Data.FreeTypeVariables
 import Data.Functor.Classes.Generic
-import Data.Functor.Foldable (Fix(..), cata)
+import Data.Functor.Foldable (Base, Fix(..), Recursive(..))
 import Data.Name
 import Data.Rec
 import qualified Data.Set as Set
@@ -58,22 +58,22 @@ partialToTotal = cata (\ partial -> case partial of
   Stop err  -> Left [err])
 
 
-tvar :: Name -> Rec (Partial Type) error
+tvar :: Embeddable Type t => Name -> t
 tvar name = emb (TVar name)
 
-makeForAllT :: Name -> Rec (Partial Type) error -> Rec (Partial Type) error
+makeForAllT :: Embeddable Type t => Name -> t -> t
 makeForAllT name body = emb (ForAll name body)
 
-forAllT :: (Rec (Partial Type) error -> Rec (Partial Type) error) -> Rec (Partial Type) error
+forAllT :: (Recursive t, Embeddable Type t, Unembeddable1 Type (Base t)) => (t -> t) -> t
 forAllT hoas = makeForAllT n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (tvar n)
 
-maxBoundVariable :: Rec (Partial Type) error -> Maybe Name
-maxBoundVariable = cata (\ partial -> case partial of
-  Cont (ForAll name _) -> Just name
-  Cont expr            -> foldr max Nothing expr
-  Stop _               -> Nothing)
+maxBoundVariable :: (Recursive t, Unembeddable1 Type (Base t)) => t -> Maybe Name
+maxBoundVariable = cata (\ partial -> case unemb1 partial of
+  Just (ForAll name _) -> Just name
+  Just expr            -> foldr max Nothing expr
+  Nothing              -> Nothing)
 
 -- | Generalize a type by binding its free variables with foralls.
 --
@@ -88,26 +88,26 @@ specialize :: forall error . Substitutable (Rec (Partial Type) error) error => T
 specialize (ForAll n b) to = substitute (substSingleton n (tvar to) :: Subst (Rec (Partial Type) error)) b
 specialize orig         _  = emb orig
 
-(.->) :: Rec (Partial Type) error -> Rec (Partial Type) error -> Rec (Partial Type) error
+(.->) :: Embeddable Type t => t -> t -> t
 arg .-> ret = emb (arg :-> ret)
 
 infixr 1 .->
 
-unitT :: Rec (Partial Type) error
+unitT :: Embeddable Type t => t
 unitT = emb Unit
 
-(.*) :: Rec (Partial Type) error -> Rec (Partial Type) error -> Rec (Partial Type) error
+(.*) :: Embeddable Type t => t -> t -> t
 fst .* snd = emb (fst :* snd)
 
 infixl 7 .*
 
-tupleT :: [Rec (Partial Type) error] -> Rec (Partial Type) error
+tupleT :: Embeddable Type t => [t] -> t
 tupleT = foldr (.*) unitT
 
-boolT :: Rec (Partial Type) error
+boolT :: Embeddable Type t => t
 boolT = emb Bool
 
-listT :: Rec (Partial Type) error -> Rec (Partial Type) error
+listT :: Embeddable Type t => t -> t
 listT = emb . List
 
 
