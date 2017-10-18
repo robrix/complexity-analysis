@@ -36,7 +36,7 @@ data AnnF f a b = InF { annF :: a, outF :: f b }
 type instance Base (Ann f a) = AnnF f a
 instance Functor f => Recursive (Ann f a) where project (In a o) = InF a o
 
-erase :: Ann Expr a -> Term
+erase :: Functor expr => Ann expr a -> Fix expr
 erase = cata (Fix . outF)
 
 
