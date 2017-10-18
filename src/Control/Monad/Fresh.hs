@@ -22,10 +22,6 @@ runFresh :: Fresh result -> Name -> (result, Name)
 runFresh = fmap runIdentity . runFreshT
 
 
-refresh :: (FreeTypeVariables value, Substitutable ty value, MonadFresh monad) => (Name -> ty) -> value -> monad value
-refresh tvar value = traverse (\ name -> fresh >>= pure . (,) name . tvar) (Set.toList (freeTypeVariables value)) >>= pure . flip substitute value . Subst
-
-
 instance Functor monad => Functor (FreshT monad) where
   fmap f (FreshT run) = FreshT (fmap (first f) . run)
 
