@@ -126,5 +126,5 @@ unlist :: Term Expr -> Term Expr -> Term Expr -> Term Expr
 unlist empty full list = Fix (Unlist empty full list)
 
 
-instance (Substitutable ty ann, Functor expr) => Substitutable1 ty (Ann expr ann) where
-  liftSubstitute recur subst (In ann expr) = In (substitute subst ann) (fmap (recur subst) expr)
+instance (Substitutable ty ann, Functor expr) => Substitutable ty (Fix (Ann expr ann)) where
+  substitute subst (Fix (In ann expr)) = Fix (In (substitute subst ann) (fmap (substitute subst) expr))
