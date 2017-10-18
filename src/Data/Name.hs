@@ -1,5 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Data.Name where
+module Data.Name
+( Name(..)
+, unName
+) where
 
 newtype Name = Name Int
   deriving (Enum, Eq, Ord, Show)
