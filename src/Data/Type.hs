@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, UndecidableInstances #-}
 module Data.Type where
 
 import Data.Bifunctor
@@ -162,10 +162,10 @@ instance Functor expr => Bifunctor (Partial expr) where
   bimap _ g (Cont expr) = Cont (fmap g expr)
   bimap f _ (Stop err)  = Stop (f err)
 
-instance Embeddable1 expr (Partial expr error) where
-  emb1 = Cont
+instance Embeddable1 expr functor => Embeddable1 expr (Partial functor error) where
+  emb1 = Cont . emb1
 
-  unemb1 (Cont expr) = Just expr
+  unemb1 (Cont expr) = unemb1 expr
   unemb1 _           = Nothing
 
 instance Embeddable1 Type Type where
