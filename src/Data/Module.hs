@@ -4,6 +4,7 @@ module Data.Module where
 import Data.Align
 import Data.Semigroup
 import Data.Semiring
+import Data.These
 
 class (Monoid m, Semigroup m, Semiring r) => Module r m where
   (><<) :: r -> m -> m
@@ -19,9 +20,7 @@ newtype Pointwise a = Pointwise { unPointwise :: [a] }
   deriving (Eq, Foldable, Functor, Ord, Show, Traversable)
 
 instance Semigroup a => Semigroup (Pointwise a) where
-  Pointwise (a : as) <> Pointwise (b : bs) = Pointwise (a <> b : as <> bs)
-  Pointwise [] <> Pointwise bs = Pointwise bs
-  Pointwise as <> Pointwise [] = Pointwise as
+  (<>) = alignWith (mergeThese (<>))
 
 instance Align Pointwise where
   nil = Pointwise []
