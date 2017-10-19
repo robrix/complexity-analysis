@@ -96,7 +96,7 @@ unify (Cont t1) (Cont t2)
   | Type.Unit  <- t1, Type.Unit  <- t2 = pure unitT
   | Type.Bool  <- t1, Type.Bool  <- t2 = pure boolT
   | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
-  | otherwise = pure (Fault (TypeMismatch t1 t2))
+  | otherwise                          = pure (Fault (TypeMismatch t1 t2))
 
 bind :: Name -> Type (Partial Error Type) -> Elab (Partial Error Type)
 bind name ty
