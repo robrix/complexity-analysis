@@ -180,9 +180,6 @@ instance Substitutable1 ty Type where
   liftSubstitute _          _     Bool               = Left (Bool)
   liftSubstitute substitute subst (List a)           = Left (List (substitute subst a))
 
-instance Substitutable (Total Type) (Total Type) where
-  substitute subst (Fix ty) = either emb id (substType subst ty)
-
 instance (Substitutable1 (Partial error ty) (error ty), Substitutable1 (Partial error ty) ty) => Substitutable (Partial error ty) (Partial error ty) where
   substitute subst (Cont ty)   = either Cont  id  (liftSubstitute substitute subst ty)
   substitute subst (Fault err) = either Fault id (liftSubstitute substitute subst err)
