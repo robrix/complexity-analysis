@@ -72,8 +72,8 @@ instance (Show1 (error ty), Show1 ty) => Show (Partial error ty) where
   showsPrec d (Fault e) = showsUnaryWith showsPrec1 "Fault" d e
 
 
-totalToPartial :: Functor ty => Total ty -> Partial error ty
-totalToPartial = cata Cont
+totalToPartial :: (Embeddable1 ty expr, Functor ty) => Total ty -> Partial error expr
+totalToPartial = cata emb
 
 partialToTotal :: (Functor (error ty), Traversable ty) => Partial error ty -> Either [error ty (Partial error ty)] (Total ty)
 partialToTotal = para (\ partial -> case partial of
