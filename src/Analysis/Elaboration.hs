@@ -17,7 +17,7 @@ import Data.Type as Type
 type Elab ann = StateT (Subst (Partial Error (Ann Type ann))) (ReaderT (Context Name) Fresh)
 
 runElab :: Elab ann a -> (a, Subst (Partial Error (Ann Type ann)))
-runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
+runElab = fst . flip runFresh (Name 0) . flip runReaderT (Context []) . flip runStateT mempty
 
 elaborate :: Monoid ann => Term Expr -> Elab ann (Rec (Ann Expr) (Partial Error (Ann Type ann)))
 elaborate term = do
