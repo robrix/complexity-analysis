@@ -4,7 +4,7 @@ module Analysis.Elaboration where
 import Control.Monad.Fresh
 import Control.Monad.Reader
 import Control.Monad.State
-import Data.Env
+import Data.Context
 import Data.Expr as Expr
 import Data.FreeVariables
 import Data.Functor.Foldable (Fix(..))

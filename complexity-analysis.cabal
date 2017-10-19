@@ -16,7 +16,7 @@ library
                      , Analysis.Examples
                      , Control.Monad.Fresh
                      , Data.Complexity
-                     , Data.Env
+                     , Data.Context
                      , Data.Expr
                      , Data.FreeVariables
                      , Data.Interval

@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, GeneralizedNewtypeDeriving #-}
-module Data.Env where
+module Data.Context where
 
 import Data.Name
 import Data.Semigroup
