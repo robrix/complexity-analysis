@@ -6,7 +6,8 @@ import Data.Semigroup
 import GHC.Generics
 
 data Cost
-  = Const Int
+  = Zero
+  | One
   | CVar Name
   | Plus Cost Cost
   | Times Cost Cost
