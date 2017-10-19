@@ -20,6 +20,7 @@ library
                      , Data.Expr
                      , Data.FreeVariables
                      , Data.Interval
+                     , Data.Module
                      , Data.Name
                      , Data.Rec
                      , Data.Semiring
