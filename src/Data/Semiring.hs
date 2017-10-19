@@ -5,6 +5,7 @@ module Data.Semiring
 , Semigroup(..)
 -- Instances
 , Arith(..)
+, getArith
 , Mult(..)
 , Few(..)
 , Boole(..)
@@ -107,8 +108,11 @@ instance Semiring Boole where
 
 
 -- | A 'Semiring' over a 'Num' instance.
-newtype Arith a = Arith { getArith :: a }
+newtype Arith a = Arith a
   deriving (Bounded, Eq, Num, Ord, Show)
+
+getArith :: Arith a -> a
+getArith (Arith a) = a
 
 instance Num a => Semigroup (Arith a) where
   (<>) = (+)
