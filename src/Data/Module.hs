@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveTraversable, FlexibleInstances, GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
 module Data.Module where
 
+import Data.Align
 import Data.Semigroup
 import Data.Semiring
 
@@ -21,3 +22,7 @@ instance Semigroup a => Semigroup (Pointwise a) where
   Pointwise (a : as) <> Pointwise (b : bs) = Pointwise (a <> b : as <> bs)
   Pointwise [] <> Pointwise bs = Pointwise bs
   Pointwise as <> Pointwise [] = Pointwise as
+
+instance Align Pointwise where
+  nil = Pointwise []
+  alignWith f (Pointwise as) (Pointwise bs) = Pointwise (alignWith f as bs)
