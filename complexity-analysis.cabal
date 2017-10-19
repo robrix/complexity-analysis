@@ -18,7 +18,7 @@ library
                      , Data.Complexity
                      , Data.Env
                      , Data.Expr
-                     , Data.FreeTypeVariables
+                     , Data.FreeVariables
                      , Data.Interval
                      , Data.Name
                      , Data.Rec

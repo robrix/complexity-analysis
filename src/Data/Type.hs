@@ -2,7 +2,7 @@
 module Data.Type where
 
 import Data.Either (fromLeft)
-import Data.FreeTypeVariables
+import Data.FreeVariables
 import Data.Functor.Classes
 import Data.Functor.Classes.Generic
 import Data.Functor.Foldable (Base, Fix(..), Recursive(..))
@@ -103,8 +103,8 @@ maxBoundVariable = cata (maybe Nothing (\ partial -> case partial of
 -- Fix Unit
 --
 -- prop> \ v -> generalize (tvar v .-> tvar v) == forAllT (\ t -> t .-> t :: Total Type)
-generalize :: (Recursive ty, Embeddable1 Type (Base ty), Embeddable Type ty, FreeTypeVariables ty, Substitutable ty ty) => ty -> ty
-generalize ty = foldr (\ v ty -> forAllT (\ new -> substitute (substSingleton v new) ty)) ty (Set.toList (freeTypeVariables ty))
+generalize :: (Recursive ty, Embeddable1 Type (Base ty), Embeddable Type ty, FreeVariables ty, Substitutable ty ty) => ty -> ty
+generalize ty = foldr (\ v ty -> forAllT (\ new -> substitute (substSingleton v new) ty)) ty (Set.toList (freeVariables ty))
 
 specialize :: forall ty . (Embeddable Type ty, Substitutable ty ty) => Type ty -> Name -> ty
 specialize (ForAll n b) to = substitute (substSingleton n (tvar to) :: Subst ty) b
@@ -144,22 +144,22 @@ prettyType d ty = cata (\ ty d -> case ty of
   List element     -> showChar '[' . element 0 . showChar ']') ty d
 
 
-instance (FreeTypeVariables1 (error ty), FreeTypeVariables1 ty, Functor (error ty), Functor ty) => FreeTypeVariables (Partial error ty) where
-  freeTypeVariables = cata freeTypeVariables1
+instance (FreeVariables1 (error ty), FreeVariables1 ty, Functor (error ty), Functor ty) => FreeVariables (Partial error ty) where
+  freeVariables = cata freeVariables1
 
-instance (FreeTypeVariables1 (error ty), FreeTypeVariables1 ty) => FreeTypeVariables1 (PartialF error ty) where
-  liftFreeTypeVariables recur (ContF ty)   = liftFreeTypeVariables recur ty
-  liftFreeTypeVariables recur (FaultF err) = liftFreeTypeVariables recur err
+instance (FreeVariables1 (error ty), FreeVariables1 ty) => FreeVariables1 (PartialF error ty) where
+  liftFreeVariables recur (ContF ty)   = liftFreeVariables recur ty
+  liftFreeVariables recur (FaultF err) = liftFreeVariables recur err
 
-instance FreeTypeVariables1 Type where
-  liftFreeTypeVariables _     (TVar name)        = Set.singleton name
-  liftFreeTypeVariables recur (ForAll name body) = Set.delete name (recur body)
-  liftFreeTypeVariables recur ty                 = foldMap recur ty
+instance FreeVariables1 Type where
+  liftFreeVariables _     (TVar name)        = Set.singleton name
+  liftFreeVariables recur (ForAll name body) = Set.delete name (recur body)
+  liftFreeVariables recur ty                 = foldMap recur ty
 
-instance FreeTypeVariables1 ty => FreeTypeVariables1 (Error ty) where
-  liftFreeTypeVariables _     (FreeVariable _)     = mempty -- The free variable here is a term variable, not a type variable.
-  liftFreeTypeVariables recur (TypeMismatch t1 t2) = liftFreeTypeVariables recur t1 `mappend` liftFreeTypeVariables recur t2
-  liftFreeTypeVariables recur (InfiniteType n b)   = Set.insert n (liftFreeTypeVariables recur b)
+instance FreeVariables1 ty => FreeVariables1 (Error ty) where
+  liftFreeVariables _     (FreeVariable _)     = mempty -- The free variable here is a term variable, not a type variable.
+  liftFreeVariables recur (TypeMismatch t1 t2) = liftFreeVariables recur t1 `mappend` liftFreeVariables recur t2
+  liftFreeVariables recur (InfiniteType n b)   = Set.insert n (liftFreeVariables recur b)
 
 
 substType :: Substitutable ty recur => Subst ty -> Type recur -> Either (Type recur) ty

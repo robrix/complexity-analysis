@@ -6,7 +6,7 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Data.Env
 import Data.Expr as Expr
-import Data.FreeTypeVariables
+import Data.FreeVariables
 import Data.Functor.Foldable (Fix(..))
 import Data.Name
 import Data.Rec
@@ -101,7 +101,7 @@ unify (Cont t1) (Cont t2)
 bind :: Name -> Type (Partial Error Type) -> Elab ann (Partial Error Type)
 bind name ty
   | TVar name' <- ty, name == name'         = pure (emb ty)
-  | Set.member name (freeTypeVariables1 ty) = pure (Fault (InfiniteType name ty))
+  | Set.member name (freeVariables1 ty) = pure (Fault (InfiniteType name ty))
   | otherwise                               = do
     subst <- get
     let ty' = substitute subst (emb ty)
