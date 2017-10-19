@@ -10,6 +10,9 @@ class FreeTypeVariables t where
 class FreeTypeVariables1 t where
   liftFreeTypeVariables :: (a -> Set.Set Name) -> t a -> Set.Set Name
 
+freeTypeVariables1 :: (FreeTypeVariables1 f, FreeTypeVariables a) => f a -> Set.Set Name
+freeTypeVariables1 = liftFreeTypeVariables freeTypeVariables
+
 
 instance FreeTypeVariables (Set.Set Name) where
   freeTypeVariables = id
