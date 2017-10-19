@@ -1,4 +1,4 @@
-module Data.Complexity where
+module Data.Cost where
 
 data Complexity i
   = Constant i

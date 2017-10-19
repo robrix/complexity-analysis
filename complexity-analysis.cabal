@@ -15,8 +15,8 @@ library
   exposed-modules:     Analysis.Elaboration
                      , Analysis.Examples
                      , Control.Monad.Fresh
-                     , Data.Complexity
                      , Data.Context
+                     , Data.Cost
                      , Data.Expr
                      , Data.FreeVariables
                      , Data.Interval
