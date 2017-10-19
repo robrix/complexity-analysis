@@ -7,7 +7,7 @@ import Data.Semigroup
 import Data.These
 
 newtype Context a = Context { getContext :: [(Name, a)] }
-  deriving (Eq, Foldable, Functor, Monoid, Ord, Show, Traversable)
+  deriving (Eq, Foldable, Functor, Ord, Show, Traversable)
 
 -- | Lookup a value in an 'Context' by 'Name'.
 --
@@ -28,6 +28,10 @@ contextFindDelete name = go
 
 instance Semigroup a => Semigroup (Context a) where
   (<>) = alignWith (mergeThese (<>))
+
+instance Monoid a => Monoid (Context a) where
+  mempty = Context []
+  mappend = alignWith (mergeThese mappend)
 
 instance Align Context where
   nil = Context []
