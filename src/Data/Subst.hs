@@ -49,7 +49,7 @@ class Substitutable ty value where
   substitute :: Subst ty -> value -> value
 
 class Substitutable1 ty value where
-  liftSubstitute :: (Subst ty -> recur -> recur) -> Subst ty -> value recur -> Either (value recur) recur
+  liftSubstitute :: (Subst ty -> recur -> recur) -> Subst ty -> value recur -> Either (value recur) ty
 
 instance Substitutable ty ty => Substitutable ty (Subst ty) where
   substitute subst = Subst . map (second (substitute subst)) . filter (flip notElem vars . fst) . getSubst
