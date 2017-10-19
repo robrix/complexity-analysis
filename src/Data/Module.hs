@@ -12,8 +12,7 @@ class (Monoid m, Semigroup m, Semiring r) => Module r m where
   infixl 7 ><<
 
 instance Semiring r => Module r [r] where
-  _ ><< []     = []
-  r ><< (x:xs) = r >< x : r ><< xs
+  (><<) = fmap . (><)
 
 
 newtype Pointwise a = Pointwise { unPointwise :: [a] }
