@@ -183,14 +183,14 @@ instance Substitutable1 ty Type where
 instance Substitutable (Total Type) (Total Type) where
   substitute subst (Fix ty) = either emb id (substType subst ty)
 
-instance Substitutable (Partial Error Type) (Partial Error Type) where
-  substitute subst (Cont ty)   = either emb id (substType subst ty)
-  substitute subst (Fault err) = Fault (substitute subst err)
+instance (Substitutable1 (Partial error ty) (error ty), Substitutable1 (Partial error ty) ty) => Substitutable (Partial error ty) (Partial error ty) where
+  substitute subst (Cont ty)   = either Cont  id  (liftSubstitute substitute subst ty)
+  substitute subst (Fault err) = either Fault id (liftSubstitute substitute subst err)
 
-instance Substitutable ty recur => Substitutable ty (Error Type recur) where
-  substitute _     (FreeVariable name)    = FreeVariable name
-  substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
-  substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
+instance Substitutable1 replacement ty => Substitutable1 replacement (Error ty) where
+  liftSubstitute _          _     (FreeVariable name)    = Left (FreeVariable name)
+  liftSubstitute substitute subst (TypeMismatch t1 t2)   = Left (TypeMismatch (fromLeft t1 (liftSubstitute substitute subst t1)) (fromLeft t2 (liftSubstitute substitute subst t2)))
+  liftSubstitute substitute subst (InfiniteType name ty) = Left (InfiniteType name (fromLeft ty (liftSubstitute substitute (substDelete name subst) ty)))
 
 instance Embeddable1 ty functor => Embeddable ty (Partial error functor) where
   emb = Cont . emb1
