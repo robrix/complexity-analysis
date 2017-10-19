@@ -1,8 +1,10 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, GeneralizedNewtypeDeriving #-}
 module Data.Context where
 
+import Data.Align
 import Data.Name
 import Data.Semigroup
+import Data.These
 
 newtype Context a = Context { getContext :: [(Name, a)] }
   deriving (Eq, Foldable, Functor, Monoid, Ord, Semigroup, Show, Traversable)
@@ -22,6 +24,17 @@ contextFindDelete name = go
           | name == name' = (Just value, Context rest)
           | otherwise     = let (found, Context rest') = go (Context rest) in (found, Context ((name', value) : rest'))
         go (Context []) = (Nothing, Context [])
+
+instance Align Context where
+  nil = Context []
+
+  alignWith f = go
+    where go as bs
+            | Context [] <- bs   = f . This <$> as
+            | Context [] <- as   = f . That <$> bs
+            | Context ((k, a):as') <- as
+            , (found, bs') <- contextFindDelete k bs
+            = Context ((k, f (maybe (This a) (These a) found)) : getContext (go (Context as') bs'))
 
 
 -- $setup
