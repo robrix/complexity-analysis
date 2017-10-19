@@ -6,6 +6,7 @@ import Data.Semigroup
 import Data.Semiring
 import Data.These
 
+-- | A (left) module over some 'Semiring' @r@.
 class (Monoid m, Semigroup m, Semiring r) => Module r m where
   (><<) :: r -> m -> m
 
