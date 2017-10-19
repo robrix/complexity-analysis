@@ -72,6 +72,10 @@ instance (Show1 (error ty), Show1 ty) => Show (Partial error ty) where
   showsPrec d (Fault e) = showsUnaryWith showsPrec1 "Fault" d e
 
 
+data Sized ty size recur = Sized size (ty recur)
+  deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
+
+
 totalToPartial :: (Embeddable1 ty expr, Functor ty) => Total ty -> Partial error expr
 totalToPartial = cata emb
 
