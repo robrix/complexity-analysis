@@ -172,22 +172,23 @@ substType _     Bool               = Left Bool
 substType subst (List a)           = Left (List (substitute subst a))
 
 instance Substitutable1 ty Type where
-  liftSubstitute _          subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup name subst)
-  liftSubstitute substitute subst (ForAll name body) = Left (ForAll name (substitute (substDelete name subst) body))
-  liftSubstitute substitute subst (arg :-> ret)      = Left (substitute subst arg :-> substitute subst ret)
-  liftSubstitute _          _     Unit               = Left (Unit)
-  liftSubstitute substitute subst (fst :* snd)       = Left (substitute subst fst :* substitute subst snd)
-  liftSubstitute _          _     Bool               = Left (Bool)
-  liftSubstitute substitute subst (List a)           = Left (List (substitute subst a))
+  liftSubstitute _     subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup name subst)
+  liftSubstitute recur subst (ForAll name body) = Left (ForAll name (recur (substDelete name subst) body))
+  liftSubstitute recur subst (arg :-> ret)      = Left (recur subst arg :-> recur subst ret)
+  liftSubstitute _     _     Unit               = Left (Unit)
+  liftSubstitute recur subst (fst :* snd)       = Left (recur subst fst :* recur subst snd)
+  liftSubstitute _     _     Bool               = Left (Bool)
+  liftSubstitute recur subst (List a)           = Left (List (recur subst a))
 
 instance (Substitutable1 (Partial error ty) (error ty), Substitutable1 (Partial error ty) ty) => Substitutable (Partial error ty) (Partial error ty) where
   substitute subst (Cont ty)   = either Cont  id  (liftSubstitute substitute subst ty)
   substitute subst (Fault err) = either Fault id (liftSubstitute substitute subst err)
 
 instance Substitutable1 replacement ty => Substitutable1 replacement (Error ty) where
-  liftSubstitute _          _     (FreeVariable name)    = Left (FreeVariable name)
-  liftSubstitute substitute subst (TypeMismatch t1 t2)   = Left (TypeMismatch (fromLeft t1 (liftSubstitute substitute subst t1)) (fromLeft t2 (liftSubstitute substitute subst t2)))
-  liftSubstitute substitute subst (InfiniteType name ty) = Left (InfiniteType name (fromLeft ty (liftSubstitute substitute (substDelete name subst) ty)))
+  liftSubstitute _     _     (FreeVariable name)    = Left (FreeVariable name)
+  liftSubstitute recur subst (TypeMismatch t1 t2)   = Left (TypeMismatch (fromLeft t1 (liftSubstitute recur subst t1))
+                                                                         (fromLeft t2 (liftSubstitute recur subst t2)))
+  liftSubstitute recur subst (InfiniteType name ty) = Left (InfiniteType name (fromLeft ty (liftSubstitute recur (substDelete name subst) ty)))
 
 instance Embeddable1 ty functor => Embeddable ty (Partial error functor) where
   emb = Cont . emb1
