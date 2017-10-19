@@ -175,9 +175,9 @@ instance Substitutable1 ty Type where
   liftSubstitute _     subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup name subst)
   liftSubstitute recur subst (ForAll name body) = Left (ForAll name (recur (substDelete name subst) body))
   liftSubstitute recur subst (arg :-> ret)      = Left (recur subst arg :-> recur subst ret)
-  liftSubstitute _     _     Unit               = Left (Unit)
+  liftSubstitute _     _     Unit               = Left Unit
   liftSubstitute recur subst (fst :* snd)       = Left (recur subst fst :* recur subst snd)
-  liftSubstitute _     _     Bool               = Left (Bool)
+  liftSubstitute _     _     Bool               = Left Bool
   liftSubstitute recur subst (List a)           = Left (List (recur subst a))
 
 instance (Substitutable1 (Partial error ty) (error ty), Substitutable1 (Partial error ty) ty) => Substitutable (Partial error ty) (Partial error ty) where
