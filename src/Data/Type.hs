@@ -175,6 +175,9 @@ instance FreeVariables1 ty => FreeVariables1 (Error ty) where
   liftFreeVariables recur (TypeMismatch t1 t2) = liftFreeVariables recur t1 `mappend` liftFreeVariables recur t2
   liftFreeVariables recur (InfiniteType n b)   = Set.insert n (liftFreeVariables recur b)
 
+instance FreeVariables1 ty => FreeVariables1 (Sized ty size) where
+  liftFreeVariables recur (Sized _ ty) = liftFreeVariables recur ty
+
 
 instance Substitutable1 ty Type where
   liftSubstitute _     subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup name subst)
