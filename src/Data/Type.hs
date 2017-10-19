@@ -215,6 +215,11 @@ instance Embeddable1 ty functor => Embeddable1 ty (PartialF error functor) where
   unemb1 (ContF ty) = unemb1 ty
   unemb1 _          = Nothing
 
+instance (Monoid size, Embeddable1 ty functor) => Embeddable1 ty (Sized functor size) where
+  emb1 = Sized mempty . emb1
+
+  unemb1 = unemb1 . sizedType
+
 instance Embeddable1 Type Type where
   emb1 = id
 
