@@ -8,13 +8,14 @@ import Data.Context
 import Data.Expr as Expr
 import Data.FreeVariables
 import Data.Functor.Foldable (Fix(..))
+import Data.Maybe (fromMaybe)
 import Data.Name
 import Data.Rec
 import qualified Data.Set as Set
 import Data.Subst
 import Data.Type as Type
 
-type Elab ann = StateT (Subst (Partial Error (Ann Type ann))) (ReaderT (Context Name) Fresh)
+type Elab ann = StateT (Subst (Partial Error (Ann Type ann))) (ReaderT (Context (Partial Error (Ann Type ann))) Fresh)
 
 runElab :: Elab ann a -> (a, Subst (Partial Error (Ann Type ann)))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT (Context []) . flip runStateT mempty
@@ -29,11 +30,11 @@ elaborate term = do
 infer :: Monoid ann => Term Expr -> Elab ann (Rec (Ann Expr) (Partial Error (Ann Type ann)))
 infer (Fix (Abs n b)) = do
   t <- fresh
-  b' <- local (contextExtend n t) (infer b)
+  b' <- local (contextExtend n (tvar t)) (infer b)
   pure (Rec (Ann (tvar t .-> ann b') (Abs n b')))
 infer (Fix (Var name)) = do
   context <- ask
-  pure (Rec (Ann (maybe (Fault (FreeVariable name)) tvar (contextLookup name context)) (Var name)))
+  pure (Rec (Ann (fromMaybe (Fault (FreeVariable name)) (contextLookup name context)) (Var name)))
 infer (Fix (App f a)) = do
   t <- fresh
   a' <- infer a
@@ -41,7 +42,7 @@ infer (Fix (App f a)) = do
   pure (Rec (Ann (tvar t) (App f' a')))
 infer (Fix (LetRec n b)) = do
   t <- fresh
-  local (contextExtend n t) (check b (tvar t))
+  local (contextExtend n (tvar t)) (check b (tvar t))
 infer (Fix Expr.Unit) = pure (Rec (Ann unitT Expr.Unit))
 infer (Fix (Pair fst snd)) = do
   fst' <- infer fst
