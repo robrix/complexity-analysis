@@ -181,7 +181,7 @@ instance Substitutable1 ty Type where
   liftSubstitute recur subst (List a)           = Left (List (recur subst a))
 
 instance (Substitutable1 (Partial error ty) (error ty), Substitutable1 (Partial error ty) ty) => Substitutable (Partial error ty) (Partial error ty) where
-  substitute subst (Cont ty)   = either Cont  id  (liftSubstitute substitute subst ty)
+  substitute subst (Cont ty)   = either Cont  id (liftSubstitute substitute subst ty)
   substitute subst (Fault err) = either Fault id (liftSubstitute substitute subst err)
 
 instance Substitutable1 replacement ty => Substitutable1 replacement (Error ty) where
