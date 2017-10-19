@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveTraversable, FlexibleInstances, GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
 module Data.Module where
 
 import Data.Semigroup
@@ -15,7 +15,7 @@ instance Semiring r => Module r [r] where
 
 
 newtype Pointwise a = Pointwise { unPointwise :: [a] }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Foldable, Functor, Ord, Show, Traversable)
 
 instance Semigroup a => Semigroup (Pointwise a) where
   Pointwise (a : as) <> Pointwise (b : bs) = Pointwise (a <> b : as <> bs)
