@@ -78,6 +78,9 @@ data Sized ty size recur = Sized size (ty recur)
 size :: Sized ty size recur -> size
 size (Sized size _) = size
 
+sizedType :: Sized ty size recur -> ty recur
+sizedType (Sized _ ty) = ty
+
 
 totalToPartial :: (Embeddable1 ty expr, Functor ty) => Total ty -> Partial error expr
 totalToPartial = cata emb
