@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, TypeFamilies, UndecidableInstances #-}
 module Data.Type where
 
+import Data.Bifunctor (first)
 import Data.Either (fromLeft)
 import Data.FreeVariables
 import Data.Functor.Classes
@@ -197,6 +198,10 @@ instance Substitutable1 replacement ty => Substitutable1 replacement (Error ty) 
   liftSubstitute recur subst (TypeMismatch t1 t2)   = Left (TypeMismatch (fromLeft t1 (liftSubstitute recur subst t1))
                                                                          (fromLeft t2 (liftSubstitute recur subst t2)))
   liftSubstitute recur subst (InfiniteType name ty) = Left (InfiniteType name (fromLeft ty (liftSubstitute recur (substDelete name subst) ty)))
+
+instance Substitutable1 ty functor => Substitutable1 ty (Sized functor size) where
+  liftSubstitute recur subst (Sized size ty) = first (Sized size) (liftSubstitute recur subst ty)
+
 
 instance Embeddable1 ty functor => Embeddable ty (Partial error functor) where
   emb = Cont . emb1
