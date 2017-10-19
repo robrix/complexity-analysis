@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Data.FreeTypeVariables where
 
+import Data.Functor.Foldable (Fix(..))
 import Data.Name
 import qualified Data.Set as Set
 
@@ -19,3 +20,6 @@ instance FreeTypeVariables (Set.Set Name) where
 
 instance FreeTypeVariables1 Set.Set where
   liftFreeTypeVariables = foldMap
+
+instance FreeTypeVariables1 ty => FreeTypeVariables (Fix ty) where
+  freeTypeVariables (Fix ty) = freeTypeVariables1 ty

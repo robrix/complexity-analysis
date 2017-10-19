@@ -161,9 +161,6 @@ instance FreeTypeVariables (ty recur) => FreeTypeVariables (Error ty recur) wher
   freeTypeVariables (TypeMismatch t1 t2) = freeTypeVariables t1 `mappend` freeTypeVariables t2
   freeTypeVariables (InfiniteType n b)   = Set.insert n (freeTypeVariables b)
 
-instance FreeTypeVariables (Total Type) where
-  freeTypeVariables (Fix ty) = freeTypeVariables ty
-
 
 substType :: Substitutable ty recur => Subst ty -> Type recur -> Either (Type recur) ty
 substType subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup name subst)
