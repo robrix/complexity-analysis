@@ -75,6 +75,9 @@ instance (Show1 (error ty), Show1 ty) => Show (Partial error ty) where
 data Sized ty size recur = Sized size (ty recur)
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
+size :: Sized ty size recur -> size
+size (Sized size _) = size
+
 
 totalToPartial :: (Embeddable1 ty expr, Functor ty) => Total ty -> Partial error expr
 totalToPartial = cata emb
