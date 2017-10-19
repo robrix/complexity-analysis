@@ -162,15 +162,6 @@ instance FreeVariables1 ty => FreeVariables1 (Error ty) where
   liftFreeVariables recur (InfiniteType n b)   = Set.insert n (liftFreeVariables recur b)
 
 
-substType :: Substitutable ty recur => Subst ty -> Type recur -> Either (Type recur) ty
-substType subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup name subst)
-substType subst (ForAll name body) = Left (ForAll name (substitute (substDelete name subst) body))
-substType subst (arg :-> ret)      = Left (substitute subst arg :-> substitute subst ret)
-substType _     Unit               = Left Unit
-substType subst (fst :* snd)       = Left (substitute subst fst :* substitute subst snd)
-substType _     Bool               = Left Bool
-substType subst (List a)           = Left (List (substitute subst a))
-
 instance Substitutable1 ty Type where
   liftSubstitute _     subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup name subst)
   liftSubstitute recur subst (ForAll name body) = Left (ForAll name (recur (substDelete name subst) body))
