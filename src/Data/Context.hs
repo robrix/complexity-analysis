@@ -1,9 +1,11 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances, GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
 module Data.Context where
 
 import Data.Align
+import Data.Module
 import Data.Name
 import Data.Semigroup
+import Data.Semiring
 import Data.These
 
 newtype Context a = Context { getContext :: [(Name, a)] }
@@ -32,6 +34,9 @@ instance Semigroup a => Semigroup (Context a) where
 instance Monoid a => Monoid (Context a) where
   mempty = Context []
   mappend = alignWith (mergeThese mappend)
+
+instance Semiring r => Module r (Context r) where
+  (><<) = fmap . (><)
 
 instance Align Context where
   nil = Context []
