@@ -30,7 +30,7 @@ instance Show1 Expr where liftShowsPrec = genericLiftShowsPrec
 
 type Term = Fix
 
-data Ann expr ann recur = In ann (expr recur)
+data Ann expr ann recur = Ann ann (expr recur)
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
 instance (Eq1   expr, Eq   ann) => Eq1   (Ann expr ann) where liftEq        = genericLiftEq
@@ -38,16 +38,16 @@ instance (Ord1  expr, Ord  ann) => Ord1  (Ann expr ann) where liftCompare   = ge
 instance (Show1 expr, Show ann) => Show1 (Ann expr ann) where liftShowsPrec = genericLiftShowsPrec
 
 ann :: Rec (Ann expr) ann -> ann
-ann (Rec (In ann _)) = ann
+ann (Rec (Ann ann _)) = ann
 
 expr :: Rec (Ann expr) ann -> expr (Rec (Ann expr) ann)
-expr (Rec (In _ expr)) = expr
+expr (Rec (Ann _ expr)) = expr
 
 annF :: Ann expr ann recur -> ann
-annF (In ann _) = ann
+annF (Ann ann _) = ann
 
 exprF :: Ann expr ann recur -> expr recur
-exprF (In _ expr) = expr
+exprF (Ann _ expr) = expr
 
 
 erase :: Functor expr => Rec (Ann expr) ann -> Term expr
@@ -128,9 +128,9 @@ unlist empty full list = Fix (Unlist empty full list)
 
 
 instance (Substitutable ty ann, Functor expr) => Substitutable ty (Rec (Ann expr) ann) where
-  substitute subst (Rec (In ann expr)) = Rec (In (substitute subst ann) (fmap (substitute subst) expr))
+  substitute subst (Rec (Ann ann expr)) = Rec (Ann (substitute subst ann) (fmap (substitute subst) expr))
 
 instance (Monoid ann, Embeddable1 expr functor) => Embeddable1 expr (Ann functor ann) where
-  emb1 = In mempty . emb1
+  emb1 = Ann mempty . emb1
 
   unemb1 = unemb1 . exprF

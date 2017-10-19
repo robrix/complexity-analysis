@@ -23,65 +23,65 @@ elaborate :: Term Expr -> Elab (Rec (Ann Expr) (Partial Error Type))
 elaborate term = do
   term' <- infer term
   subst <- get
-  let Rec (In ty tm) = substitute subst term'
-  pure (Rec (In (generalize ty) tm))
+  let Rec (Ann ty tm) = substitute subst term'
+  pure (Rec (Ann (generalize ty) tm))
 
 infer :: Term Expr -> Elab (Rec (Ann Expr) (Partial Error Type))
 infer (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (envExtend n t) (infer b)
-  pure (Rec (In (tvar t .-> ann b') (Abs n b')))
+  pure (Rec (Ann (tvar t .-> ann b') (Abs n b')))
 infer (Fix (Var name)) = do
   env <- ask
-  pure (Rec (In (maybe (Fault (FreeVariable name)) tvar (envLookup name env)) (Var name)))
+  pure (Rec (Ann (maybe (Fault (FreeVariable name)) tvar (envLookup name env)) (Var name)))
 infer (Fix (App f a)) = do
   t <- fresh
   a' <- infer a
   f' <- check f (ann a' .-> tvar t)
-  pure (Rec (In (tvar t) (App f' a')))
+  pure (Rec (Ann (tvar t) (App f' a')))
 infer (Fix (LetRec n b)) = do
   t <- fresh
   local (envExtend n t) (check b (tvar t))
-infer (Fix Expr.Unit) = pure (Rec (In unitT Expr.Unit))
+infer (Fix Expr.Unit) = pure (Rec (Ann unitT Expr.Unit))
 infer (Fix (Pair fst snd)) = do
   fst' <- infer fst
   snd' <- infer snd
-  pure (Rec (In (ann fst' .* ann snd') (Pair fst' snd')))
+  pure (Rec (Ann (ann fst' .* ann snd') (Pair fst' snd')))
 infer (Fix (Fst pair)) = do
   t1 <- fresh
   t2 <- fresh
   pair' <- check pair (tvar t1 .* tvar t2)
-  pure (Rec (In (tvar t1) (Fst pair')))
+  pure (Rec (Ann (tvar t1) (Fst pair')))
 infer (Fix (Snd pair)) = do
   t1 <- fresh
   t2 <- fresh
   pair' <- check pair (tvar t1 .* tvar t2)
-  pure (Rec (In (tvar t2) (Snd pair')))
-infer (Fix (Expr.Bool b)) = pure (Rec (In boolT (Expr.Bool b)))
+  pure (Rec (Ann (tvar t2) (Snd pair')))
+infer (Fix (Expr.Bool b)) = pure (Rec (Ann boolT (Expr.Bool b)))
 infer (Fix (If c t e)) = do
   c' <- check c boolT
   t' <- infer t
   e' <- infer e
   result <- unify (ann t') (ann e')
-  pure (Rec (In result (If c' t' e')))
+  pure (Rec (Ann result (If c' t' e')))
 infer (Fix (Cons h t)) = do
   a <- fresh
   h' <- check h (tvar a)
   t' <- check t (listT (tvar a))
-  pure (Rec (In (listT (tvar a)) (Cons h' t')))
-infer (Fix Nil) = Rec . flip In Nil . listT . tvar <$> fresh
+  pure (Rec (Ann (listT (tvar a)) (Cons h' t')))
+infer (Fix Nil) = Rec . flip Ann Nil . listT . tvar <$> fresh
 infer (Fix (Unlist empty full list)) = do
   a <- fresh
   empty' <- infer empty
   full' <- check full (tvar a .-> listT (tvar a) .-> ann empty')
   list' <- check list (listT (tvar a))
-  pure (Rec (In (ann empty') (Unlist empty' full' list')))
+  pure (Rec (Ann (ann empty') (Unlist empty' full' list')))
 
 check :: Term Expr -> Partial Error Type -> Elab (Rec (Ann Expr) (Partial Error Type))
 check term ty = do
   term' <- infer term
   termTy <- unify (ann term') ty
-  pure (Rec (In termTy (expr term')))
+  pure (Rec (Ann termTy (expr term')))
 
 
 unify :: Partial Error Type -> Partial Error Type -> Elab (Partial Error Type)
