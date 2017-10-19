@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
 module Data.Expr where
 
+import Data.FreeVariables
 import Data.Functor.Classes.Generic
 import Data.Functor.Foldable (Fix(..), cata)
 import Data.Name
@@ -134,3 +135,6 @@ instance (Monoid ann, Embeddable1 expr functor) => Embeddable1 expr (Ann functor
   emb1 = Ann mempty . emb1
 
   unemb1 = unemb1 . exprF
+
+instance FreeVariables1 expr => FreeVariables1 (Ann expr ann) where
+  liftFreeVariables recur (Ann _ expr) = liftFreeVariables recur expr
