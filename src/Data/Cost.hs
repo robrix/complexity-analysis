@@ -5,4 +5,6 @@ import Data.Name
 data Cost
   = Const Int
   | CVar Name
+  | Plus Cost Cost
+  | Times Cost Cost
   deriving (Eq, Ord, Read, Show)
