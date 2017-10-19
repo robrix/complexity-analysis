@@ -81,6 +81,10 @@ size (Sized size _) = size
 sizedType :: Sized ty size recur -> ty recur
 sizedType (Sized _ ty) = ty
 
+instance (Eq1   ty, Eq   size) => Eq1   (Sized ty size) where liftEq        = genericLiftEq
+instance (Ord1  ty, Ord  size) => Ord1  (Sized ty size) where liftCompare   = genericLiftCompare
+instance (Show1 ty, Show size) => Show1 (Sized ty size) where liftShowsPrec = genericLiftShowsPrec
+
 
 totalToPartial :: (Embeddable1 ty expr, Functor ty) => Total ty -> Partial error expr
 totalToPartial = cata emb
