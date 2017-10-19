@@ -7,4 +7,4 @@ data Cost
   | CVar Name
   | Plus Cost Cost
   | Times Cost Cost
-  deriving (Eq, Ord, Read, Show)
+  deriving (Eq, Ord, Show)
