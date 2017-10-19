@@ -1,5 +1,5 @@
 module Data.Cost where
 
 data Complexity i
-  = Constant i
+  = Const Int
   deriving (Eq, Ord, Read, Show)
