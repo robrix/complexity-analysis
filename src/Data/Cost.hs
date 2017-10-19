@@ -15,3 +15,7 @@ data Cost
 
 instance Semigroup Cost where
   (<>) = Plus
+
+instance Monoid Cost where
+  mempty = Zero
+  mappend = (<>)
