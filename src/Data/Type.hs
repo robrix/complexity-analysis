@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, UndecidableInstances #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, TypeFamilies, UndecidableInstances #-}
 module Data.Type where
 
 import Data.Either (fromLeft)
@@ -42,24 +42,43 @@ instance Show1 ty => Show1 (Error ty) where liftShowsPrec = genericLiftShowsPrec
 
 type Total = Fix
 
-data Partial ty recur = Cont (ty recur) | Fault (Error ty recur)
+data Partial  ty       = Cont  (ty (Partial ty)) | Fault  (Error ty (Partial ty))
+data PartialF ty recur = ContF (ty recur)        | FaultF (Error ty recur)
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
-fault :: Error ty (Fix (Partial ty)) -> Fix (Partial ty)
-fault = Fix . Fault
+instance Eq1   ty => Eq1   (PartialF ty) where liftEq        = genericLiftEq
+instance Ord1  ty => Ord1  (PartialF ty) where liftCompare   = genericLiftCompare
+instance Show1 ty => Show1 (PartialF ty) where liftShowsPrec = genericLiftShowsPrec
 
-instance Eq1   ty => Eq1   (Partial ty) where liftEq        = genericLiftEq
-instance Ord1  ty => Ord1  (Partial ty) where liftCompare   = genericLiftCompare
-instance Show1 ty => Show1 (Partial ty) where liftShowsPrec = genericLiftShowsPrec
+type instance Base (Partial ty) = PartialF ty
+
+instance Functor ty => Recursive (Partial ty) where
+  project (Cont t)  = ContF t
+  project (Fault e) = FaultF e
+
+instance Eq1 ty => Eq (Partial ty) where
+  Cont t1  == Cont t2  = eq1 t1 t2
+  Fault e1 == Fault e2 = eq1 e1 e2
+  _        == _        = False
+
+instance Ord1  ty => Ord  (Partial ty) where
+  compare (Cont t1)  (Cont t2)  = compare1 t1 t2
+  compare (Cont _)   (Fault _)  = LT
+  compare (Fault _)  (Cont _)   = GT
+  compare (Fault e1) (Fault e2) = compare1 e1 e2
+
+instance Show1 ty => Show (Partial ty) where
+  showsPrec d (Cont ty) = showsUnaryWith showsPrec1 "Cont"  d ty
+  showsPrec d (Fault e) = showsUnaryWith showsPrec1 "Fault" d e
 
 
-totalToPartial :: Functor ty => Total ty -> Fix (Partial ty)
-totalToPartial = cata (Fix . Cont)
+totalToPartial :: Functor ty => Total ty -> Partial ty
+totalToPartial = cata Cont
 
-partialToTotal :: Traversable ty => Fix (Partial ty) -> Either [Error ty (Fix (Partial ty))] (Total ty)
+partialToTotal :: Traversable ty => Partial ty -> Either [Error ty (Partial ty)] (Total ty)
 partialToTotal = para (\ partial -> case partial of
-  Cont ty   -> fmap Fix (traverse snd ty)
-  Fault err -> Left [fmap fst err])
+  ContF ty   -> fmap Fix (traverse snd ty)
+  FaultF err -> Left [fmap fst err])
 
 
 tvar :: Embeddable Type t => Name -> t
@@ -125,12 +144,12 @@ prettyType d ty = cata (\ ty d -> case ty of
   List element     -> showChar '[' . element 0 . showChar ']') ty d
 
 
-instance FreeTypeVariables (Fix (Partial Type)) where
+instance FreeTypeVariables (Partial Type) where
   freeTypeVariables = cata freeTypeVariables
 
-instance (FreeTypeVariables (ty recur), FreeTypeVariables recur) => FreeTypeVariables (Partial ty recur) where
-  freeTypeVariables (Cont ty)   = freeTypeVariables ty
-  freeTypeVariables (Fault err) = freeTypeVariables err
+instance (FreeTypeVariables (ty recur), FreeTypeVariables recur) => FreeTypeVariables (PartialF ty recur) where
+  freeTypeVariables (ContF ty)   = freeTypeVariables ty
+  freeTypeVariables (FaultF err) = freeTypeVariables err
 
 instance FreeTypeVariables t => FreeTypeVariables (Type t) where
   freeTypeVariables (TVar name)        = Set.singleton name
@@ -158,20 +177,26 @@ substType subst (List a)           = Left (List (substitute subst a))
 instance Substitutable (Total Type) (Total Type) where
   substitute subst (Fix ty) = either emb id (substType subst ty)
 
-instance Substitutable (Fix (Partial Type)) (Fix (Partial Type)) where
-  substitute subst (Fix (Cont ty))   = either emb id (substType subst ty)
-  substitute subst (Fix (Fault err)) = fault (substitute subst err)
+instance Substitutable (Partial Type) (Partial Type) where
+  substitute subst (Cont ty)   = either emb id (substType subst ty)
+  substitute subst (Fault err) = Fault (substitute subst err)
 
 instance Substitutable ty recur => Substitutable ty (Error Type recur) where
   substitute _     (FreeVariable name)    = FreeVariable name
   substitute subst (TypeMismatch t1 t2)   = TypeMismatch (fromLeft t1 (substType subst t1)) (fromLeft t2 (substType subst t2))
   substitute subst (InfiniteType name ty) = InfiniteType name (fromLeft ty (substType (substDelete name subst) ty))
 
-instance Embeddable1 ty functor => Embeddable1 ty (Partial functor) where
-  emb1 = Cont . emb1
+instance Embeddable1 ty functor => Embeddable ty (Partial functor) where
+  emb = Cont . emb1
 
-  unemb1 (Cont ty) = unemb1 ty
-  unemb1 _         = Nothing
+  unemb (Cont ty) = unemb1 ty
+  unemb _         = Nothing
+
+instance Embeddable1 ty functor => Embeddable1 ty (PartialF functor) where
+  emb1 = ContF . emb1
+
+  unemb1 (ContF ty) = unemb1 ty
+  unemb1 _          = Nothing
 
 instance Embeddable1 Type Type where
   emb1 = id

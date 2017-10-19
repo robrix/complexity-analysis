@@ -14,28 +14,26 @@ import qualified Data.Set as Set
 import Data.Subst
 import Data.Type as Type
 
-type Elab = StateT (Subst (Elaborated Type)) (ReaderT (Env Name) Fresh)
+type Elab = StateT (Subst (Partial Type)) (ReaderT (Env Name) Fresh)
 
-type Elaborated ty = Fix (Partial ty)
-
-runElab :: Elab a -> (a, Subst (Elaborated Type))
+runElab :: Elab a -> (a, Subst (Partial Type))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-elaborate :: Term Expr -> Elab (Rec (Ann Expr) (Elaborated Type))
+elaborate :: Term Expr -> Elab (Rec (Ann Expr) (Partial Type))
 elaborate term = do
   term' <- infer term
   subst <- get
   let Rec (In ty tm) = substitute subst term'
   pure (Rec (In (generalize ty) tm))
 
-infer :: Term Expr -> Elab (Rec (Ann Expr) (Elaborated Type))
+infer :: Term Expr -> Elab (Rec (Ann Expr) (Partial Type))
 infer (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (envExtend n t) (infer b)
   pure (Rec (In (tvar t .-> ann b') (Abs n b')))
 infer (Fix (Var name)) = do
   env <- ask
-  pure (Rec (In (maybe (fault (FreeVariable name)) tvar (envLookup name env)) (Var name)))
+  pure (Rec (In (maybe (Fault (FreeVariable name)) tvar (envLookup name env)) (Var name)))
 infer (Fix (App f a)) = do
   t <- fresh
   a' <- infer a
@@ -79,17 +77,17 @@ infer (Fix (Unlist empty full list)) = do
   list' <- check list (listT (tvar a))
   pure (Rec (In (ann empty') (Unlist empty' full' list')))
 
-check :: Term Expr -> Elaborated Type -> Elab (Rec (Ann Expr) (Elaborated Type))
+check :: Term Expr -> Partial Type -> Elab (Rec (Ann Expr) (Partial Type))
 check term ty = do
   term' <- infer term
   termTy <- unify (ann term') ty
   pure (Rec (In termTy (expr term')))
 
 
-unify :: Elaborated Type -> Elaborated Type -> Elab (Elaborated Type)
-unify (Fix (Fault e)) _                = pure (fault e)
-unify _               (Fix (Fault e))  = pure (fault e)
-unify (Fix (Cont t1)) (Fix (Cont t2))
+unify :: Partial Type -> Partial Type -> Elab (Partial Type)
+unify (Fault e) _         = pure (Fault e)
+unify _         (Fault e) = pure (Fault e)
+unify (Cont t1) (Cont t2)
   | TVar name1 <- t1                   = bind name1 t2
   |                   TVar name2 <- t2 = bind name2 t1
   | ForAll{}   <- t1, ForAll{}   <- t2 = fresh >>= \ n -> makeForAllT n <$> unify (specialize t1 n) (specialize t2 n)
@@ -98,12 +96,12 @@ unify (Fix (Cont t1)) (Fix (Cont t2))
   | Type.Unit  <- t1, Type.Unit  <- t2 = pure unitT
   | Type.Bool  <- t1, Type.Bool  <- t2 = pure boolT
   | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
-  | otherwise = pure (fault (TypeMismatch t1 t2))
+  | otherwise = pure (Fault (TypeMismatch t1 t2))
 
-bind :: Name -> Type (Elaborated Type) -> Elab (Elaborated Type)
+bind :: Name -> Type (Partial Type) -> Elab (Partial Type)
 bind name ty
   | TVar name' <- ty, name == name'        = pure (emb ty)
-  | Set.member name (freeTypeVariables ty) = pure (fault (InfiniteType name ty))
+  | Set.member name (freeTypeVariables ty) = pure (Fault (InfiniteType name ty))
   | otherwise                              = do
     subst <- get
     let ty' = substitute subst (emb ty)
