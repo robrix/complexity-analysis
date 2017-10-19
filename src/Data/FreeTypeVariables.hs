@@ -15,7 +15,7 @@ freeTypeVariables1 = liftFreeTypeVariables freeTypeVariables
 
 
 instance FreeTypeVariables (Set.Set Name) where
-  freeTypeVariables = id
+  freeTypeVariables = liftFreeTypeVariables Set.singleton
 
 instance FreeTypeVariables1 Set.Set where
   liftFreeTypeVariables = foldMap
