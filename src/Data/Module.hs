@@ -22,6 +22,10 @@ newtype Pointwise a = Pointwise { unPointwise :: [a] }
 instance Semigroup a => Semigroup (Pointwise a) where
   (<>) = alignWith (mergeThese (<>))
 
+instance Monoid a => Monoid (Pointwise a) where
+  mempty = Pointwise []
+  mappend = alignWith (mergeThese mappend)
+
 instance Align Pointwise where
   nil = Pointwise []
   alignWith f (Pointwise as) (Pointwise bs) = Pointwise (alignWith f as bs)
