@@ -16,6 +16,13 @@ contextLookup name = lookup name . getContext
 contextExtend :: Name -> a -> Context a -> Context a
 contextExtend name value = Context . ((name, value) :) . getContext
 
+contextFindDelete :: Name -> Context a -> (Maybe a, Context a)
+contextFindDelete name = go
+  where go (Context ((name', value) : rest))
+          | name == name' = (Just value, Context rest)
+          | otherwise     = let (found, Context rest') = go (Context rest) in (found, Context ((name', value) : rest'))
+        go (Context []) = (Nothing, Context [])
+
 
 -- $setup
 -- >>> import Test.QuickCheck
