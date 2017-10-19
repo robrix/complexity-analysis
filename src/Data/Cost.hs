@@ -3,6 +3,7 @@ module Data.Cost where
 
 import Data.Name
 import Data.Semigroup
+import Data.Semiring (Semiring(..))
 import GHC.Generics
 
 data Cost
@@ -19,3 +20,7 @@ instance Semigroup Cost where
 instance Monoid Cost where
   mempty = Zero
   mappend = (<>)
+
+instance Semiring Cost where
+  one = One
+  (><) = Times
