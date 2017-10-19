@@ -171,6 +171,15 @@ substType subst (fst :* snd)       = Left (substitute subst fst :* substitute su
 substType _     Bool               = Left Bool
 substType subst (List a)           = Left (List (substitute subst a))
 
+instance Substitutable1 ty Type where
+  liftSubstitute _          subst (TVar name)        = maybe (Left (TVar name)) Right (substLookup name subst)
+  liftSubstitute substitute subst (ForAll name body) = Left (ForAll name (substitute (substDelete name subst) body))
+  liftSubstitute substitute subst (arg :-> ret)      = Left (substitute subst arg :-> substitute subst ret)
+  liftSubstitute _          _     Unit               = Left (Unit)
+  liftSubstitute substitute subst (fst :* snd)       = Left (substitute subst fst :* substitute subst snd)
+  liftSubstitute _          _     Bool               = Left (Bool)
+  liftSubstitute substitute subst (List a)           = Left (List (substitute subst a))
+
 instance Substitutable (Total Type) (Total Type) where
   substitute subst (Fix ty) = either emb id (substType subst ty)
 
