@@ -14,19 +14,19 @@ import qualified Data.Set as Set
 import Data.Subst
 import Data.Type as Type
 
-type Elab = StateT (Subst (Partial Error Type)) (ReaderT (Env Name) Fresh)
+type Elab ann = StateT (Subst (Partial Error Type)) (ReaderT (Env Name) Fresh)
 
-runElab :: Elab a -> (a, Subst (Partial Error Type))
+runElab :: Elab ann a -> (a, Subst (Partial Error Type))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT mempty . flip runStateT mempty
 
-elaborate :: Term Expr -> Elab (Rec (Ann Expr) (Partial Error Type))
+elaborate :: Term Expr -> Elab ann (Rec (Ann Expr) (Partial Error Type))
 elaborate term = do
   term' <- infer term
   subst <- get
   let Rec (Ann ty tm) = substitute subst term'
   pure (Rec (Ann (generalize ty) tm))
 
-infer :: Term Expr -> Elab (Rec (Ann Expr) (Partial Error Type))
+infer :: Term Expr -> Elab ann (Rec (Ann Expr) (Partial Error Type))
 infer (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (envExtend n t) (infer b)
@@ -77,14 +77,14 @@ infer (Fix (Unlist empty full list)) = do
   list' <- check list (listT (tvar a))
   pure (Rec (Ann (ann empty') (Unlist empty' full' list')))
 
-check :: Term Expr -> Partial Error Type -> Elab (Rec (Ann Expr) (Partial Error Type))
+check :: Term Expr -> Partial Error Type -> Elab ann (Rec (Ann Expr) (Partial Error Type))
 check term ty = do
   term' <- infer term
   termTy <- unify (ann term') ty
   pure (Rec (Ann termTy (expr term')))
 
 
-unify :: Partial Error Type -> Partial Error Type -> Elab (Partial Error Type)
+unify :: Partial Error Type -> Partial Error Type -> Elab ann (Partial Error Type)
 unify (Fault e) _         = pure (Fault e)
 unify _         (Fault e) = pure (Fault e)
 unify (Cont t1) (Cont t2)
@@ -98,7 +98,7 @@ unify (Cont t1) (Cont t2)
   | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
   | otherwise                          = pure (Fault (TypeMismatch t1 t2))
 
-bind :: Name -> Type (Partial Error Type) -> Elab (Partial Error Type)
+bind :: Name -> Type (Partial Error Type) -> Elab ann (Partial Error Type)
 bind name ty
   | TVar name' <- ty, name == name'         = pure (emb ty)
   | Set.member name (freeTypeVariables1 ty) = pure (Fault (InfiniteType name ty))
