@@ -8,8 +8,7 @@ import Control.Monad.State
 import Data.Context
 import Data.Expr as Expr
 import Data.FreeVariables
-import Data.Functor.Foldable (Fix(..), cata)
-import Data.Maybe (fromMaybe)
+import Data.Functor.Foldable (Fix(..))
 import Data.Name
 import Data.Rec
 import Data.Semiring
@@ -17,8 +16,8 @@ import qualified Data.Set as Set
 import Data.Subst
 import Data.Type as Type
 
-type Elab size = StateT (Subst (Partial Error (Sized Type size)))
-               ( ReaderT (Context (Partial Error (Sized Type size)))
+type Elab size = StateT (Subst (Rec (Sized Type) size))
+               ( ReaderT (Context (Rec (Sized Type) size))
                ( FreshT
                ( Except Error)))
 
@@ -28,24 +27,26 @@ data Error
   | InfiniteType Name (Total Type)
   deriving (Eq, Ord, Show)
 
-runElab :: Elab size a -> Either Error (a, Subst (Partial Error (Sized Type size)))
+runElab :: Elab size a -> Either Error (a, Subst (Rec (Sized Type) size))
 runElab = fmap fst . runExcept . flip runFreshT (Name 0) . flip runReaderT (Context []) . flip runStateT mempty
 
-elaborate :: Semiring size => Term Expr -> Elab size (Rec (Ann Expr) (Partial Error (Sized Type size)))
+elaborate :: Semiring size => Term Expr -> Elab size (Rec (Ann Expr) (Rec (Sized Type) size))
 elaborate term = do
   term' <- infer term
   subst <- get
   let Rec (Ann ty tm) = substitute subst term'
   pure (Rec (Ann (generalize ty) tm))
 
-infer :: Semiring size => Term Expr -> Elab size (Rec (Ann Expr) (Partial Error (Sized Type size)))
+infer :: Semiring size => Term Expr -> Elab size (Rec (Ann Expr) (Rec (Sized Type) size))
 infer (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (contextExtend n (tvar t)) (infer b)
   pure (Rec (Ann (tvar t .-> ann b') (Abs n b')))
 infer (Fix (Var name)) = do
   context <- ask
-  pure (Rec (Ann (fromMaybe (Fault (FreeVariable name)) (contextLookup name context)) (Var name)))
+  case contextLookup name context of
+    Just ty -> pure (Rec (Ann ty (Var name)))
+    Nothing -> throwError (FreeVariable name)
 infer (Fix (App f a)) = do
   t <- fresh
   a' <- infer a
@@ -89,17 +90,15 @@ infer (Fix (Unlist empty full list)) = do
   list' <- check list (listT (tvar a))
   pure (Rec (Ann (ann empty') (Unlist empty' full' list')))
 
-check :: Semiring size => Term Expr -> Partial Error (Sized Type size) -> Elab size (Rec (Ann Expr) (Partial Error (Sized Type size)))
+check :: Semiring size => Term Expr -> Rec (Sized Type) size -> Elab size (Rec (Ann Expr) (Rec (Sized Type) size))
 check term ty = do
   term' <- infer term
   termTy <- unify (ann term') ty
   pure (Rec (Ann termTy (expr term')))
 
 
-unify :: Monoid size => Partial Error (Sized Type size) -> Partial Error (Sized Type size) -> Elab size (Partial Error (Sized Type size))
-unify (Fault e) _         = pure (Fault e)
-unify _         (Fault e) = pure (Fault e)
-unify (Cont (Sized s1 t1)) (Cont (Sized s2 t2))
+unify :: Monoid size => Rec (Sized Type) size -> Rec (Sized Type) size -> Elab size (Rec (Sized Type) size)
+unify (Rec (Sized s1 t1)) (Rec (Sized s2 t2))
   | TVar name1 <- t1                   = bind name1 (Sized s2 t2)
   |                   TVar name2 <- t2 = bind name2 (Sized s1 t1)
   | ForAll{}   <- t1, ForAll{}   <- t2 = fresh >>= \ n -> makeForAllT n <$> unify (specialize t1 n) (specialize t2 n)
@@ -108,19 +107,12 @@ unify (Cont (Sized s1 t1)) (Cont (Sized s2 t2))
   | Type.Unit  <- t1, Type.Unit  <- t2 = pure unitT
   | Type.Bool  <- t1, Type.Bool  <- t2 = pure boolT
   | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
-  | otherwise                          = case (traverse partialToTotal t1, traverse partialToTotal t2) of
-    (Right t1,     Right t2)     -> pure (Fault (TypeMismatch (Fix (cata (Fix . sizedType) <$> t1)) (Fix (cata (Fix . sizedType) <$> t2))))
-    (Left (err:_), _)            -> throwError err
-    (_           , Left (err:_)) -> throwError err
-    _                            -> error "no errors but somehow still failed"
+  | otherwise                          = throwError (TypeMismatch (Fix (eraseSize <$> t1)) (Fix (eraseSize <$> t2)))
 
-bind :: Monoid size => Name -> Sized Type size (Partial Error (Sized Type size)) -> Elab size (Partial Error (Sized Type size))
+bind :: Monoid size => Name -> Sized Type size (Rec (Sized Type) size) -> Elab size (Rec (Sized Type) size)
 bind name (Sized _ ty)
   | TVar name' <- ty, name == name'     = pure (fromType ty)
-  | Set.member name (freeVariables1 ty) = case traverse partialToTotal ty of
-    Right ty     -> pure (Fault (InfiniteType name (Fix (cata (Fix . sizedType) <$> ty))))
-    Left (err:_) -> throwError err
-    _            -> error "no errors but somehow still failed"
+  | Set.member name (freeVariables1 ty) = throwError (InfiniteType name (Fix (eraseSize <$> ty)))
   | otherwise                           = do
     subst <- get
     let ty' = substitute subst (fromType ty)

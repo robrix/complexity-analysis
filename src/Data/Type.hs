@@ -82,9 +82,8 @@ instance Functor ty => Bifunctor (Sized ty) where
   bimap f g (Sized size ty) = Sized (f size) (fmap g ty)
 
 
-modifySize :: Functor ty => (size -> size) -> Partial error (Sized ty size) -> Partial error (Sized ty size)
-modifySize f (Cont sized) = Cont (first f sized)
-modifySize _ other        = other
+modifySize :: Functor ty => (size -> size) -> Rec (Sized ty) size -> Rec (Sized ty) size
+modifySize f (Rec sized) = Rec (first f sized)
 
 
 totalToPartial :: Typical1 ty => Total Type -> Partial error ty
