@@ -14,8 +14,8 @@ import Data.Subst
 import GHC.Generics
 
 data Type a
-  = TVar Name
-  | ForAll Name a
+  = ForAll Name a
+  | TVar Name
   | a :-> a
   | Unit
   | a :* a
