@@ -22,4 +22,6 @@ instance Monoid Cost where
 
 instance Semiring Cost where
   one = Const 1
-  (><) = Times
+  a       >< Const 1 = a
+  Const 1 >< b       = b
+  a       >< b       = Times a b
