@@ -4,4 +4,4 @@ import System.Environment
 import Test.DocTest
 
 main :: IO ()
-main = getArgs >>= doctest . (++ ["src"])
+main = getArgs >>= doctest . (++ ["-package these", "src"])
