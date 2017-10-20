@@ -152,6 +152,11 @@ instance Typical1 ty => Typical (Partial error ty) where
   toType (Cont ty) = toType1 ty
   toType _         = Nothing
 
+instance Typical1 ty => Typical1 (PartialF error ty) where
+  fromType1 = ContF . fromType1
+  toType1 (ContF ty) = toType1 ty
+  toType1 _          = Nothing
+
 
 forAllT :: (Recursive t, Embeddable1 Type (Base t), Typical t) => (t -> t) -> t
 forAllT hoas = makeForAllT n body
