@@ -101,9 +101,9 @@ unify (Cont (Sized s1 t1)) (Cont (Sized s2 t2))
 
 bind :: Monoid size => Name -> Sized Type size (Partial Error (Sized Type size)) -> Elab size (Partial Error (Sized Type size))
 bind name (Sized size ty)
-  | TVar name' <- ty, name == name'     = pure (emb ty)
+  | TVar name' <- ty, name == name'     = pure (fromType ty)
   | Set.member name (freeVariables1 ty) = pure (Fault (InfiniteType name (Sized size ty)))
   | otherwise                           = do
     subst <- get
-    let ty' = substitute subst (emb ty)
+    let ty' = substitute subst (fromType ty)
     maybe (put (substExtend name ty' subst) >> pure ty') (unify ty') (substLookup name subst)
