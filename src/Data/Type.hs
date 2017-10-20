@@ -142,7 +142,7 @@ maxBoundVariable = cata (maybe Nothing (\ partial -> case partial of
 -- Fix Unit
 --
 -- prop> \ v -> generalize (tvar v .-> tvar v) == forAllT (\ t -> t .-> t :: Total Type)
-generalize :: (Recursive ty, Embeddable1 Type (Base ty), Embeddable Type ty, FreeVariables ty, Substitutable ty ty) => ty -> ty
+generalize :: (Recursive ty, Embeddable1 Type (Base ty), Typical ty, FreeVariables ty, Substitutable ty ty) => ty -> ty
 generalize ty = foldr (\ v ty -> forAllT (\ new -> substitute (substSingleton v new) ty)) ty (Set.toList (freeVariables ty))
 
 specialize :: forall ty . (Embeddable Type ty, Substitutable ty ty) => Type ty -> Name -> ty
