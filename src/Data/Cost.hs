@@ -7,8 +7,7 @@ import Data.Semiring (Semiring(..))
 import GHC.Generics
 
 data Cost
-  = Zero
-  | One
+  = Const Integer
   | CVar Name
   | Plus Cost Cost
   | Times Cost Cost
@@ -18,9 +17,9 @@ instance Semigroup Cost where
   (<>) = Plus
 
 instance Monoid Cost where
-  mempty = Zero
+  mempty = Const 0
   mappend = (<>)
 
 instance Semiring Cost where
-  one = One
+  one = Const 1
   (><) = Times
