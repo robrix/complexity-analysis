@@ -28,12 +28,6 @@ instance Eq1   Type where liftEq        = genericLiftEq
 instance Ord1  Type where liftCompare   = genericLiftCompare
 instance Show1 Type where liftShowsPrec = genericLiftShowsPrec
 
-data Error
-  = FreeVariable Name
-  | TypeMismatch (Total Type) (Total Type)
-  | InfiniteType Name (Total Type)
-  deriving (Eq, Ord, Show)
-
 
 type Total = Fix
 
@@ -209,11 +203,6 @@ instance FreeVariables1 Type where
   liftFreeVariables _     (TVar name)        = Set.singleton name
   liftFreeVariables recur (ForAll name body) = Set.delete name (recur body)
   liftFreeVariables recur ty                 = foldMap recur ty
-
-instance FreeVariables Error where
-  freeVariables (FreeVariable _)     = mempty -- The free variable here is a term variable, not a type variable.
-  freeVariables (TypeMismatch t1 t2) = freeVariables t1 `mappend` freeVariables t2
-  freeVariables (InfiniteType n b)   = Set.insert n (freeVariables b)
 
 instance FreeVariables1 ty => FreeVariables1 (Sized ty size) where
   liftFreeVariables recur (Sized _ ty) = liftFreeVariables recur ty

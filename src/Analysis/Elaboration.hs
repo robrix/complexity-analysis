@@ -18,6 +18,12 @@ import Data.Type as Type
 
 type Elab size = StateT (Subst (Partial Error (Sized Type size))) (ReaderT (Context (Partial Error (Sized Type size))) Fresh)
 
+data Error
+  = FreeVariable Name
+  | TypeMismatch (Total Type) (Total Type)
+  | InfiniteType Name (Total Type)
+  deriving (Eq, Ord, Show)
+
 runElab :: Elab size a -> (a, Subst (Partial Error (Sized Type size)))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT (Context []) . flip runStateT mempty
 
@@ -108,3 +114,8 @@ bind name (Sized size ty)
     subst <- get
     let ty' = substitute subst (fromType ty)
     maybe (put (substExtend name ty' subst) >> pure ty') (unify ty') (substLookup name subst)
+
+instance FreeVariables Error where
+  freeVariables (FreeVariable _)     = mempty -- The free variable here is a term variable, not a type variable.
+  freeVariables (TypeMismatch t1 t2) = freeVariables t1 `mappend` freeVariables t2
+  freeVariables (InfiniteType n b)   = Set.insert n (freeVariables b)
