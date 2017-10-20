@@ -70,6 +70,9 @@ size (Sized size _) = size
 sizedType :: Sized ty size recur -> ty recur
 sizedType (Sized _ ty) = ty
 
+eraseSize :: (Recursive t, Base t ~ Sized ty size, Functor ty) => t -> Total ty
+eraseSize = cata (Fix . sizedType)
+
 instance (Eq1   ty, Eq   size) => Eq1   (Sized ty size) where liftEq        = genericLiftEq
 instance (Ord1  ty, Ord  size) => Ord1  (Sized ty size) where liftCompare   = genericLiftCompare
 instance (Show1 ty, Show size) => Show1 (Sized ty size) where liftShowsPrec = genericLiftShowsPrec
