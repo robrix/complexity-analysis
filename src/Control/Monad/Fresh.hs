@@ -40,3 +40,6 @@ instance MonadFresh monad => MonadFresh (ReaderT read monad) where
 
 instance MonadFresh monad => MonadFresh (StateT state monad) where
   fresh = lift fresh
+
+instance MonadTrans FreshT where
+  lift m = FreshT (flip fmap m . flip (,))
