@@ -115,14 +115,13 @@ unify t1 t2 = do
           | otherwise                          = throwError (TypeMismatch r1 r2)
 
 bind :: Monoid size => Name -> Rec (Sized Type) size -> Elab size (Rec (Sized Type) size)
-bind name ty
-  | TVar name' <- sizedType (unRec ty)
-  , name == name'                      = pure ty
-  | Set.member name (freeVariables ty) = throwError (InfiniteType name ty)
-  | otherwise                          = do
+bind n ty
+  | TVar n' <- sizedType ty, n == n' = pure ty
+  | Set.member n (freeVariables ty)  = throwError (InfiniteType n ty)
+  | otherwise                        = do
     subst <- get
     let ty' = substitute subst ty
-    maybe (put (substExtend name ty' subst) >> pure ty') (unify ty') (substLookup name subst)
+    maybe (put (substExtend n ty' subst) >> pure ty') (unify ty') (substLookup n subst)
 
 instance FreeVariables ty => FreeVariables (Error ty) where
   freeVariables (FreeVariable _)     = mempty -- The free variable here is a term variable, not a type variable.

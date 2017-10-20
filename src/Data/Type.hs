@@ -68,11 +68,14 @@ data Sized ty size recur = Sized size (ty recur)
 size :: Sized ty size recur -> size
 size (Sized size _) = size
 
-sizedType :: Sized ty size recur -> ty recur
-sizedType (Sized _ ty) = ty
+sizedType :: Rec (Sized ty) size -> ty (Rec (Sized ty) size)
+sizedType = sizedTypeF . unRec
+
+sizedTypeF :: Sized ty size recur -> ty recur
+sizedTypeF (Sized _ ty) = ty
 
 eraseSize :: (Recursive t, Base t ~ Sized ty size, Functor ty) => t -> Total ty
-eraseSize = cata (Fix . sizedType)
+eraseSize = cata (Fix . sizedTypeF)
 
 instance (Eq1   ty, Eq   size) => Eq1   (Sized ty size) where liftEq        = genericLiftEq
 instance (Ord1  ty, Ord  size) => Ord1  (Sized ty size) where liftCompare   = genericLiftCompare
@@ -139,7 +142,7 @@ instance Typical1 Type where
 
 instance Monoid size => Typical1 (Sized Type size) where
   fromType1 = Sized mempty
-  toType1 = Just . sizedType
+  toType1 = Just . sizedTypeF
 
 
 instance Typical1 (ty size) => Typical (Rec ty size) where
