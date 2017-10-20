@@ -4,7 +4,7 @@ import Data.Expr as Expr
 import Data.Type as Type
 
 foldr :: Term Expr
-foldr = letRec (\ foldr -> lam (\ combine -> lam (\ seed -> lam (\ list -> unlist seed (lam (\ a -> lam (\ as -> combine # a # (foldr # combine # seed # as)))) list))))
+foldr = letRec (\ recur -> lam (\ combine -> lam (\ seed -> lam (\ list -> unlist seed (lam (\ a -> lam (\ as -> combine # a # (recur # combine # seed # as)))) list))))
 
 foldrT :: Total Type
 foldrT = forAllT (\ each -> forAllT (\ result -> (each .-> result .-> result) .-> result .-> listT each .-> result))
@@ -15,7 +15,7 @@ foldrT = forAllT (\ each -> forAllT (\ result -> (each .-> result .-> result) .-
 
 
 map :: Term Expr
-map = letRec (\ map -> lam (\ f -> lam (\ list -> unlist nil (lam (\ a -> lam (\ as -> cons (f # a) (map # f # as)))) list)))
+map = letRec (\ recur -> lam (\ f -> lam (\ list -> unlist nil (lam (\ a -> lam (\ as -> cons (f # a) (recur # f # as)))) list)))
 
 mapT :: Total Type
 mapT = forAllT (\ element -> forAllT (\ mapped -> (element .-> mapped) .-> listT element .-> listT mapped))
