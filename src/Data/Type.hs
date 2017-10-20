@@ -126,7 +126,7 @@ instance Embeddable Type t => Typical t where
   listT = emb . List
 
 
-forAllT :: (Recursive t, Embeddable1 Type (Base t), Embeddable Type t) => (t -> t) -> t
+forAllT :: (Recursive t, Embeddable1 Type (Base t), Typical t) => (t -> t) -> t
 forAllT hoas = makeForAllT n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (tvar n)
@@ -149,7 +149,7 @@ specialize :: forall ty . (Embeddable Type ty, Substitutable ty ty) => Type ty -
 specialize (ForAll n b) to = substitute (substSingleton n (tvar to) :: Subst ty) b
 specialize orig         _  = emb orig
 
-tupleT :: Embeddable Type t => [t] -> t
+tupleT :: Typical t => [t] -> t
 tupleT = foldr (.*) unitT
 
 
