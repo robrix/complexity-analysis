@@ -14,7 +14,9 @@ data Cost
   deriving (Eq, Generic, Ord, Show)
 
 instance Semigroup Cost where
-  (<>) = Plus
+  a       <> Const 0 = a
+  Const 0 <> b       = b
+  a       <> b       = Plus a b
 
 instance Monoid Cost where
   mempty = Const 0
