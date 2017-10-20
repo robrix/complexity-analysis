@@ -111,6 +111,8 @@ class Typical t where
 
   listT :: t -> t
 
+  fromType :: Type t -> t
+
 
 instance Embeddable Type t => Typical t where
   makeForAllT name body = emb (ForAll name body)
@@ -124,6 +126,8 @@ instance Embeddable Type t => Typical t where
   boolT = emb Bool
 
   listT = emb . List
+
+  fromType = emb
 
 
 forAllT :: (Recursive t, Embeddable1 Type (Base t), Typical t) => (t -> t) -> t
