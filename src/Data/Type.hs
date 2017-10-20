@@ -130,7 +130,13 @@ class Typical t where
   fromType :: Type t -> t
 
 
-instance Embeddable Type t => Typical t where
+instance Typical (Total Type) where
+  fromType = emb
+
+instance Typical (Partial error Type) where
+  fromType = emb
+
+instance Monoid size => Typical (Partial error (Sized Type size)) where
   fromType = emb
 
 
