@@ -131,12 +131,15 @@ class Typical t where
 
 class Typical1 t where
   fromType1 :: Type a -> t a
+  toType1 :: t a -> Maybe (Type a)
 
 instance Typical1 Type where
   fromType1 = id
+  toType1 = Just
 
 instance Monoid size => Typical1 (Sized Type size) where
   fromType1 = Sized mempty
+  toType1 = Just . sizedType
 
 
 instance Typical1 ty => Typical (Total ty) where
