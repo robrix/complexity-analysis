@@ -45,9 +45,6 @@ ann (Rec (Ann ann _)) = ann
 expr :: Rec (Ann expr) ann -> expr (Rec (Ann expr) ann)
 expr (Rec (Ann _ expr)) = expr
 
-annF :: Ann expr ann recur -> ann
-annF (Ann ann _) = ann
-
 exprF :: Ann expr ann recur -> expr recur
 exprF (Ann _ expr) = expr
 
