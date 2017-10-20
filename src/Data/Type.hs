@@ -6,7 +6,7 @@ import Data.Either (fromLeft)
 import Data.FreeVariables
 import Data.Functor.Classes
 import Data.Functor.Classes.Generic
-import Data.Functor.Foldable (Base, Fix(..), Recursive(..))
+import Data.Functor.Foldable (Base, Fix(..), Recursive(..), unfix)
 import Data.Name
 import Data.Rec
 import qualified Data.Set as Set
@@ -128,6 +128,7 @@ class Typical t where
 
 
   fromType :: Type t -> t
+  toType :: t -> Maybe (Type t)
 
 class Typical1 t where
   fromType1 :: Type a -> t a
@@ -144,9 +145,12 @@ instance Monoid size => Typical1 (Sized Type size) where
 
 instance Typical1 ty => Typical (Total ty) where
   fromType = Fix . fromType1
+  toType = toType1 . unfix
 
 instance Typical1 ty => Typical (Partial error ty) where
   fromType = Cont . fromType1
+  toType (Cont ty) = toType1 ty
+  toType _         = Nothing
 
 
 forAllT :: (Recursive t, Embeddable1 Type (Base t), Typical t) => (t -> t) -> t
