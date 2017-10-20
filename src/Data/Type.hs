@@ -158,15 +158,15 @@ instance Typical1 ty => Typical1 (PartialF error ty) where
   toType1 _          = Nothing
 
 
-forAllT :: (Recursive t, Embeddable1 Type (Base t), Typical t) => (t -> t) -> t
+forAllT :: (Recursive t, Typical1 (Base t), Typical t) => (t -> t) -> t
 forAllT hoas = makeForAllT n body
   where n = maybe (Name 0) succ (maxBoundVariable body)
         body = hoas (tvar n)
 
-maxBoundVariable :: (Recursive t, Embeddable1 Type (Base t)) => t -> Maybe Name
+maxBoundVariable :: (Recursive t, Typical1 (Base t)) => t -> Maybe Name
 maxBoundVariable = cata (maybe Nothing (\ partial -> case partial of
   ForAll name _ -> Just name
-  ty            -> foldr max Nothing ty) . unemb1)
+  ty            -> foldr max Nothing ty) . toType1)
 
 -- | Generalize a type by binding its free variables with foralls.
 --
@@ -174,7 +174,7 @@ maxBoundVariable = cata (maybe Nothing (\ partial -> case partial of
 -- Fix Unit
 --
 -- prop> \ v -> generalize (tvar v .-> tvar v) == forAllT (\ t -> t .-> t :: Total Type)
-generalize :: (Recursive ty, Embeddable1 Type (Base ty), Typical ty, FreeVariables ty, Substitutable ty ty) => ty -> ty
+generalize :: (Recursive ty, Typical1 (Base ty), Typical ty, FreeVariables ty, Substitutable ty ty) => ty -> ty
 generalize ty = foldr (\ v ty -> forAllT (\ new -> substitute (substSingleton v new) ty)) ty (Set.toList (freeVariables ty))
 
 specialize :: forall ty . (Typical ty, Substitutable ty ty) => Type ty -> Name -> ty
