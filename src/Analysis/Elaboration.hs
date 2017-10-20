@@ -19,15 +19,15 @@ import Data.Type as Type
 type Elab size = StateT (Subst (Rec (Sized Type) size))
                ( ReaderT (Context (Rec (Sized Type) size))
                ( FreshT
-               ( Except Error)))
+               ( Except (Error (Rec (Sized Type) size)))))
 
-data Error
+data Error ty
   = FreeVariable Name
-  | TypeMismatch (Total Type) (Total Type)
-  | InfiniteType Name (Total Type)
+  | TypeMismatch ty ty
+  | InfiniteType Name ty
   deriving (Eq, Ord, Show)
 
-runElab :: Elab size a -> Either Error (a, Subst (Rec (Sized Type) size))
+runElab :: Elab size a -> Either (Error (Rec (Sized Type) size)) (a, Subst (Rec (Sized Type) size))
 runElab = fmap fst . runExcept . flip runFreshT (Name 0) . flip runReaderT (Context []) . flip runStateT mempty
 
 elaborate :: Semiring size => Term Expr -> Elab size (Rec (Ann Expr) (Rec (Sized Type) size))
@@ -107,18 +107,18 @@ unify (Rec (Sized s1 t1)) (Rec (Sized s2 t2))
   | Type.Unit  <- t1, Type.Unit  <- t2 = pure unitT
   | Type.Bool  <- t1, Type.Bool  <- t2 = pure boolT
   | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
-  | otherwise                          = throwError (TypeMismatch (Fix (eraseSize <$> t1)) (Fix (eraseSize <$> t2)))
+  | otherwise                          = throwError (TypeMismatch (Rec (Sized s1 t1)) (Rec (Sized s2 t2)))
 
 bind :: Monoid size => Name -> Sized Type size (Rec (Sized Type) size) -> Elab size (Rec (Sized Type) size)
-bind name (Sized _ ty)
+bind name (Sized size ty)
   | TVar name' <- ty, name == name'     = pure (fromType ty)
-  | Set.member name (freeVariables1 ty) = throwError (InfiniteType name (Fix (eraseSize <$> ty)))
+  | Set.member name (freeVariables1 ty) = throwError (InfiniteType name (Rec (Sized size ty)))
   | otherwise                           = do
     subst <- get
     let ty' = substitute subst (fromType ty)
     maybe (put (substExtend name ty' subst) >> pure ty') (unify ty') (substLookup name subst)
 
-instance FreeVariables Error where
+instance FreeVariables ty => FreeVariables (Error ty) where
   freeVariables (FreeVariable _)     = mempty -- The free variable here is a term variable, not a type variable.
   freeVariables (TypeMismatch t1 t2) = freeVariables t1 `mappend` freeVariables t2
   freeVariables (InfiniteType n b)   = Set.insert n (freeVariables b)
