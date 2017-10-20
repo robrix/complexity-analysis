@@ -7,6 +7,7 @@ import Data.Functor.Classes
 import Data.Functor.Classes.Generic
 import Data.Functor.Foldable (Base, Fix(..), Recursive(..), unfix)
 import Data.Name
+import Data.Rec
 import qualified Data.Set as Set
 import Data.Subst
 import GHC.Generics
@@ -226,6 +227,9 @@ instance Substitutable1 (Partial error ty) ty => Substitutable (Partial error ty
 
 instance Substitutable1 ty functor => Substitutable1 ty (Sized functor size) where
   liftSubstitute recur subst (Sized size ty) = first (Sized size) (liftSubstitute recur subst ty)
+
+instance Substitutable1 (Rec (Sized ty) size) ty => Substitutable (Rec (Sized ty) size) (Rec (Sized ty) size) where
+  substitute subst (Rec (Sized size ty)) = either (const (Rec (Sized size ty))) id (liftSubstitute substitute subst ty)
 
 
 -- $setup
