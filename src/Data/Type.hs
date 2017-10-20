@@ -143,6 +143,10 @@ instance Monoid size => Typical1 (Sized Type size) where
   toType1 = Just . sizedType
 
 
+instance Typical1 (ty size) => Typical (Rec ty size) where
+  fromType = Rec . fromType1
+  toType = toType1 . unRec
+
 instance Typical1 ty => Typical (Total ty) where
   fromType = Fix . fromType1
   toType = toType1 . unfix
