@@ -139,11 +139,11 @@ instance Monoid size => Typical1 (Sized Type size) where
   fromType1 = Sized mempty
 
 
-instance Typical (Total Type) where
-  fromType = emb
+instance Typical1 ty => Typical (Total ty) where
+  fromType = Fix . fromType1
 
-instance Embeddable1 Type ty => Typical (Partial error ty) where
-  fromType = emb
+instance Typical1 ty => Typical (Partial error ty) where
+  fromType = Cont . fromType1
 
 
 forAllT :: (Recursive t, Embeddable1 Type (Base t), Typical t) => (t -> t) -> t
