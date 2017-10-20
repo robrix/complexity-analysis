@@ -32,36 +32,6 @@ instance Show1 Type where liftShowsPrec = genericLiftShowsPrec
 
 type Total = Fix
 
-data Partial  error ty       = Cont  (ty (Partial error ty)) | Fault  error
-data PartialF error ty recur = ContF (ty recur)              | FaultF error
-  deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
-
-instance (Eq   error, Eq1   ty) => Eq1   (PartialF error ty) where liftEq        = genericLiftEq
-instance (Ord  error, Ord1  ty) => Ord1  (PartialF error ty) where liftCompare   = genericLiftCompare
-instance (Show error, Show1 ty) => Show1 (PartialF error ty) where liftShowsPrec = genericLiftShowsPrec
-
-type instance Base (Partial error ty) = PartialF error ty
-
-instance Functor ty => Recursive (Partial error ty) where
-  project (Cont t)  = ContF t
-  project (Fault e) = FaultF e
-
-instance (Eq error, Eq1 ty) => Eq (Partial error ty) where
-  Cont t1  == Cont t2  = eq1 t1 t2
-  Fault e1 == Fault e2 = e1 == e2
-  _        == _        = False
-
-instance (Ord error, Ord1 ty) => Ord (Partial error ty) where
-  compare (Cont t1)  (Cont t2)  = compare1 t1 t2
-  compare (Cont _)   (Fault _)  = LT
-  compare (Fault _)  (Cont _)   = GT
-  compare (Fault e1) (Fault e2) = compare e1 e2
-
-instance (Show error, Show1 ty) => Show (Partial error ty) where
-  showsPrec d (Cont ty) = showsUnaryWith showsPrec1 "Cont"  d ty
-  showsPrec d (Fault e) = showsUnaryWith showsPrec  "Fault" d e
-
-
 data Sized ty size recur = Sized size (ty recur)
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
 
@@ -87,15 +57,6 @@ instance Functor ty => Bifunctor (Sized ty) where
 
 modifySize :: Functor ty => (size -> size) -> Rec (Sized ty) size -> Rec (Sized ty) size
 modifySize f (Rec sized) = Rec (first f sized)
-
-
-totalToPartial :: Typical1 ty => Total Type -> Partial error ty
-totalToPartial = cata fromType
-
-partialToTotal :: Traversable ty => Partial error ty -> Either [error] (Total ty)
-partialToTotal = para (\ partial -> case partial of
-  ContF ty   -> fmap Fix (traverse snd ty)
-  FaultF err -> Left [err])
 
 
 class Typical t where
@@ -153,16 +114,6 @@ instance Typical1 ty => Typical (Total ty) where
   fromType = Fix . fromType1
   toType = toType1 . unfix
 
-instance Typical1 ty => Typical (Partial error ty) where
-  fromType = Cont . fromType1
-  toType (Cont ty) = toType1 ty
-  toType _         = Nothing
-
-instance Typical1 ty => Typical1 (PartialF error ty) where
-  fromType1 = ContF . fromType1
-  toType1 (ContF ty) = toType1 ty
-  toType1 _          = Nothing
-
 
 forAllT :: (Recursive t, Typical1 (Base t), Typical t) => (t -> t) -> t
 forAllT hoas = makeForAllT n body
@@ -202,13 +153,6 @@ prettyType d ty = cata (\ ty d -> case ty of
   List element     -> showChar '[' . element 0 . showChar ']') ty d
 
 
-instance (FreeVariables1 ty, Functor ty) => FreeVariables (Partial error ty) where
-  freeVariables = cata freeVariables1
-
-instance FreeVariables1 ty => FreeVariables1 (PartialF error ty) where
-  liftFreeVariables recur (ContF ty) = liftFreeVariables recur ty
-  liftFreeVariables _     (FaultF _) = mempty
-
 instance FreeVariables1 Type where
   liftFreeVariables _     (TVar name)        = Set.singleton name
   liftFreeVariables recur (ForAll name body) = Set.delete name (recur body)
@@ -226,10 +170,6 @@ instance Substitutable1 ty Type where
   liftSubstitute recur subst (fst :* snd)       = Left (recur subst fst :* recur subst snd)
   liftSubstitute _     _     Bool               = Left Bool
   liftSubstitute recur subst (List a)           = Left (List (recur subst a))
-
-instance Substitutable1 (Partial error ty) ty => Substitutable (Partial error ty) (Partial error ty) where
-  substitute subst (Cont ty)   = either Cont  id (liftSubstitute substitute subst ty)
-  substitute _     (Fault err) = Fault err
 
 instance Substitutable1 ty functor => Substitutable1 ty (Sized functor size) where
   liftSubstitute recur subst (Sized size ty) = first (Sized size) (liftSubstitute recur subst ty)
