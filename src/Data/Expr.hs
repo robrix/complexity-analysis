@@ -132,11 +132,6 @@ unlist empty full list = Fix (Unlist empty full list)
 instance (Substitutable ty ann, Functor expr) => Substitutable ty (Rec (Ann expr) ann) where
   substitute subst (Rec (Ann ann expr)) = Rec (Ann (substitute subst ann) (fmap (substitute subst) expr))
 
-instance (Monoid ann, Embeddable1 expr functor) => Embeddable1 expr (Ann functor ann) where
-  emb1 = Ann mempty . emb1
-
-  unemb1 = unemb1 . exprF
-
 instance FreeVariables1 expr => FreeVariables1 (Ann expr ann) where
   liftFreeVariables recur (Ann _ expr) = liftFreeVariables recur expr
 
