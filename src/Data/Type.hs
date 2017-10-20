@@ -133,10 +133,7 @@ class Typical t where
 instance Typical (Total Type) where
   fromType = emb
 
-instance Typical (Partial error Type) where
-  fromType = emb
-
-instance Monoid size => Typical (Partial error (Sized Type size)) where
+instance Embeddable1 Type ty => Typical (Partial error ty) where
   fromType = emb
 
 
