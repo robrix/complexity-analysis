@@ -13,7 +13,7 @@ newtype Context a = Context { getContext :: [(Name, a)] }
 
 -- | Lookup a value in an 'Context' by 'Name'.
 --
--- prop> \ name -> envLookup name mempty == Nothing
+-- prop> \ name -> contextLookup name mempty == Nothing
 contextLookup :: Name -> Context a -> Maybe a
 contextLookup name = lookup name . getContext
 
