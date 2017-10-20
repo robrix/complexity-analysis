@@ -96,11 +96,35 @@ partialToTotal = para (\ partial -> case partial of
   FaultF err -> Left [fmap fst err])
 
 
-tvar :: Embeddable Type t => Name -> t
-tvar name = emb (TVar name)
+class Typical t where
+  makeForAllT :: Name -> t -> t
+  tvar :: Name -> t
 
-makeForAllT :: Embeddable Type t => Name -> t -> t
-makeForAllT name body = emb (ForAll name body)
+  (.->) :: t -> t -> t
+  infixr 1 .->
+
+  unitT :: t
+  (.*) :: t -> t -> t
+  infixl 7 .*
+
+  boolT :: t
+
+  listT :: t -> t
+
+
+instance Embeddable Type t => Typical t where
+  makeForAllT name body = emb (ForAll name body)
+  tvar name = emb (TVar name)
+
+  arg .-> ret = emb (arg :-> ret)
+
+  unitT = emb Unit
+  fst .* snd = emb (fst :* snd)
+
+  boolT = emb Bool
+
+  listT = emb . List
+
 
 forAllT :: (Recursive t, Embeddable1 Type (Base t), Embeddable Type t) => (t -> t) -> t
 forAllT hoas = makeForAllT n body
@@ -125,27 +149,8 @@ specialize :: forall ty . (Embeddable Type ty, Substitutable ty ty) => Type ty -
 specialize (ForAll n b) to = substitute (substSingleton n (tvar to) :: Subst ty) b
 specialize orig         _  = emb orig
 
-(.->) :: Embeddable Type t => t -> t -> t
-arg .-> ret = emb (arg :-> ret)
-
-infixr 1 .->
-
-unitT :: Embeddable Type t => t
-unitT = emb Unit
-
-(.*) :: Embeddable Type t => t -> t -> t
-fst .* snd = emb (fst :* snd)
-
-infixl 7 .*
-
 tupleT :: Embeddable Type t => [t] -> t
 tupleT = foldr (.*) unitT
-
-boolT :: Embeddable Type t => t
-boolT = emb Bool
-
-listT :: Embeddable Type t => t -> t
-listT = emb . List
 
 
 prettyType :: Int -> Total Type -> ShowS
