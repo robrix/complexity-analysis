@@ -2,12 +2,12 @@
 module Data.Type where
 
 import Data.Bifunctor
-import Data.Either (fromLeft)
 import Data.FreeVariables
 import Data.Functor.Classes
 import Data.Functor.Classes.Generic
 import Data.Functor.Foldable (Base, Fix(..), Recursive(..), unfix)
 import Data.Name
+import Data.Rec
 import qualified Data.Set as Set
 import Data.Subst
 import GHC.Generics
@@ -29,48 +29,8 @@ instance Eq1   Type where liftEq        = genericLiftEq
 instance Ord1  Type where liftCompare   = genericLiftCompare
 instance Show1 Type where liftShowsPrec = genericLiftShowsPrec
 
-data Error ty recur
-  = FreeVariable Name
-  | TypeMismatch (ty recur) (ty recur)
-  | InfiniteType Name (ty recur)
-  deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
-
-instance Eq1   ty => Eq1   (Error ty) where liftEq        = genericLiftEq
-instance Ord1  ty => Ord1  (Error ty) where liftCompare   = genericLiftCompare
-instance Show1 ty => Show1 (Error ty) where liftShowsPrec = genericLiftShowsPrec
-
 
 type Total = Fix
-
-data Partial  error ty       = Cont  (ty (Partial error ty)) | Fault  (error ty (Partial error ty))
-data PartialF error ty recur = ContF (ty recur)              | FaultF (error ty recur)
-  deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
-
-instance (Eq1   (error ty), Eq1   ty) => Eq1   (PartialF error ty) where liftEq        = genericLiftEq
-instance (Ord1  (error ty), Ord1  ty) => Ord1  (PartialF error ty) where liftCompare   = genericLiftCompare
-instance (Show1 (error ty), Show1 ty) => Show1 (PartialF error ty) where liftShowsPrec = genericLiftShowsPrec
-
-type instance Base (Partial error ty) = PartialF error ty
-
-instance (Functor (error ty), Functor ty) => Recursive (Partial error ty) where
-  project (Cont t)  = ContF t
-  project (Fault e) = FaultF e
-
-instance (Eq1 (error ty), Eq1 ty) => Eq (Partial error ty) where
-  Cont t1  == Cont t2  = eq1 t1 t2
-  Fault e1 == Fault e2 = eq1 e1 e2
-  _        == _        = False
-
-instance (Ord1 (error ty), Ord1 ty) => Ord (Partial error ty) where
-  compare (Cont t1)  (Cont t2)  = compare1 t1 t2
-  compare (Cont _)   (Fault _)  = LT
-  compare (Fault _)  (Cont _)   = GT
-  compare (Fault e1) (Fault e2) = compare1 e1 e2
-
-instance (Show1 (error ty), Show1 ty) => Show (Partial error ty) where
-  showsPrec d (Cont ty) = showsUnaryWith showsPrec1 "Cont"  d ty
-  showsPrec d (Fault e) = showsUnaryWith showsPrec1 "Fault" d e
-
 
 data Sized ty size recur = Sized size (ty recur)
   deriving (Eq, Foldable, Functor, Generic1, Ord, Show, Traversable)
@@ -78,8 +38,14 @@ data Sized ty size recur = Sized size (ty recur)
 size :: Sized ty size recur -> size
 size (Sized size _) = size
 
-sizedType :: Sized ty size recur -> ty recur
-sizedType (Sized _ ty) = ty
+sizedType :: Rec (Sized ty) size -> ty (Rec (Sized ty) size)
+sizedType = sizedTypeF . unRec
+
+sizedTypeF :: Sized ty size recur -> ty recur
+sizedTypeF (Sized _ ty) = ty
+
+eraseSize :: (Recursive t, Base t ~ Sized ty size, Functor ty) => t -> Total ty
+eraseSize = cata (Fix . sizedTypeF)
 
 instance (Eq1   ty, Eq   size) => Eq1   (Sized ty size) where liftEq        = genericLiftEq
 instance (Ord1  ty, Ord  size) => Ord1  (Sized ty size) where liftCompare   = genericLiftCompare
@@ -89,18 +55,8 @@ instance Functor ty => Bifunctor (Sized ty) where
   bimap f g (Sized size ty) = Sized (f size) (fmap g ty)
 
 
-modifySize :: Functor ty => (size -> size) -> Partial error (Sized ty size) -> Partial error (Sized ty size)
-modifySize f (Cont sized) = Cont (first f sized)
-modifySize _ other        = other
-
-
-totalToPartial :: Typical1 ty => Total Type -> Partial error ty
-totalToPartial = cata fromType
-
-partialToTotal :: (Functor (error ty), Traversable ty) => Partial error ty -> Either [error ty (Partial error ty)] (Total ty)
-partialToTotal = para (\ partial -> case partial of
-  ContF ty   -> fmap Fix (traverse snd ty)
-  FaultF err -> Left [fmap fst err])
+modifySize :: Functor ty => (size -> size) -> Rec (Sized ty) size -> Rec (Sized ty) size
+modifySize f (Rec sized) = Rec (first f sized)
 
 
 class Typical t where
@@ -147,22 +103,16 @@ instance Typical1 Type where
 
 instance Monoid size => Typical1 (Sized Type size) where
   fromType1 = Sized mempty
-  toType1 = Just . sizedType
+  toType1 = Just . sizedTypeF
 
+
+instance Typical1 (ty size) => Typical (Rec ty size) where
+  fromType = Rec . fromType1
+  toType = toType1 . unRec
 
 instance Typical1 ty => Typical (Total ty) where
   fromType = Fix . fromType1
   toType = toType1 . unfix
-
-instance Typical1 ty => Typical (Partial error ty) where
-  fromType = Cont . fromType1
-  toType (Cont ty) = toType1 ty
-  toType _         = Nothing
-
-instance Typical1 ty => Typical1 (PartialF error ty) where
-  fromType1 = ContF . fromType1
-  toType1 (ContF ty) = toType1 ty
-  toType1 _          = Nothing
 
 
 forAllT :: (Recursive t, Typical1 (Base t), Typical t) => (t -> t) -> t
@@ -203,22 +153,10 @@ prettyType d ty = cata (\ ty d -> case ty of
   List element     -> showChar '[' . element 0 . showChar ']') ty d
 
 
-instance (FreeVariables1 (error ty), FreeVariables1 ty, Functor (error ty), Functor ty) => FreeVariables (Partial error ty) where
-  freeVariables = cata freeVariables1
-
-instance (FreeVariables1 (error ty), FreeVariables1 ty) => FreeVariables1 (PartialF error ty) where
-  liftFreeVariables recur (ContF ty)   = liftFreeVariables recur ty
-  liftFreeVariables recur (FaultF err) = liftFreeVariables recur err
-
 instance FreeVariables1 Type where
   liftFreeVariables _     (TVar name)        = Set.singleton name
   liftFreeVariables recur (ForAll name body) = Set.delete name (recur body)
   liftFreeVariables recur ty                 = foldMap recur ty
-
-instance FreeVariables1 ty => FreeVariables1 (Error ty) where
-  liftFreeVariables _     (FreeVariable _)     = mempty -- The free variable here is a term variable, not a type variable.
-  liftFreeVariables recur (TypeMismatch t1 t2) = liftFreeVariables recur t1 `mappend` liftFreeVariables recur t2
-  liftFreeVariables recur (InfiniteType n b)   = Set.insert n (liftFreeVariables recur b)
 
 instance FreeVariables1 ty => FreeVariables1 (Sized ty size) where
   liftFreeVariables recur (Sized _ ty) = liftFreeVariables recur ty
@@ -233,18 +171,11 @@ instance Substitutable1 ty Type where
   liftSubstitute _     _     Bool               = Left Bool
   liftSubstitute recur subst (List a)           = Left (List (recur subst a))
 
-instance (Substitutable1 (Partial error ty) (error ty), Substitutable1 (Partial error ty) ty) => Substitutable (Partial error ty) (Partial error ty) where
-  substitute subst (Cont ty)   = either Cont  id (liftSubstitute substitute subst ty)
-  substitute subst (Fault err) = either Fault id (liftSubstitute substitute subst err)
-
-instance Substitutable1 replacement ty => Substitutable1 replacement (Error ty) where
-  liftSubstitute _     _     (FreeVariable name)    = Left (FreeVariable name)
-  liftSubstitute recur subst (TypeMismatch t1 t2)   = Left (TypeMismatch (fromLeft t1 (liftSubstitute recur subst t1))
-                                                                         (fromLeft t2 (liftSubstitute recur subst t2)))
-  liftSubstitute recur subst (InfiniteType name ty) = Left (InfiniteType name (fromLeft ty (liftSubstitute recur (substDelete name subst) ty)))
-
 instance Substitutable1 ty functor => Substitutable1 ty (Sized functor size) where
   liftSubstitute recur subst (Sized size ty) = first (Sized size) (liftSubstitute recur subst ty)
+
+instance Substitutable1 (Rec (Sized ty) size) ty => Substitutable (Rec (Sized ty) size) (Rec (Sized ty) size) where
+  substitute subst (Rec (Sized size ty)) = either (Rec . Sized size) id (liftSubstitute substitute subst ty)
 
 
 -- $setup

@@ -1,6 +1,7 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
 module Control.Monad.Fresh where
 
+import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Bifunctor (first)
@@ -40,3 +41,10 @@ instance MonadFresh monad => MonadFresh (ReaderT read monad) where
 
 instance MonadFresh monad => MonadFresh (StateT state monad) where
   fresh = lift fresh
+
+instance MonadTrans FreshT where
+  lift m = FreshT (flip fmap m . flip (,))
+
+instance MonadError error monad => MonadError error (FreshT monad) where
+  throwError = lift . throwError
+  catchError body handler = FreshT (\ s -> catchError (runFreshT body s) (flip runFreshT s . handler))
