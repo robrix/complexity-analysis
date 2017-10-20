@@ -3,6 +3,7 @@ module Data.FreeVariables where
 
 import Data.Functor.Foldable (Fix(..))
 import Data.Name
+import Data.Rec
 import qualified Data.Set as Set
 
 class FreeVariables t where
@@ -23,3 +24,6 @@ instance FreeVariables1 Set.Set where
 
 instance FreeVariables1 ty => FreeVariables (Fix ty) where
   freeVariables (Fix ty) = freeVariables1 ty
+
+instance FreeVariables1 (ty size) => FreeVariables (Rec ty size) where
+  freeVariables = freeVariables1 . unRec
