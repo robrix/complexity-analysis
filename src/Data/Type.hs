@@ -98,35 +98,39 @@ partialToTotal = para (\ partial -> case partial of
 
 class Typical t where
   makeForAllT :: Name -> t -> t
+  makeForAllT name body = fromType (ForAll name body)
+
   tvar :: Name -> t
+  tvar name = fromType (TVar name)
+
 
   (.->) :: t -> t -> t
+  a .-> b = fromType (a :-> b)
+
   infixr 1 .->
 
+
   unitT :: t
+  unitT = fromType Unit
+
   (.*) :: t -> t -> t
+  l .* r = fromType (l :* r)
+
   infixl 7 .*
 
+
   boolT :: t
+  boolT = fromType Bool
+
 
   listT :: t -> t
+  listT element = fromType (List element)
+
 
   fromType :: Type t -> t
 
 
 instance Embeddable Type t => Typical t where
-  makeForAllT name body = emb (ForAll name body)
-  tvar name = emb (TVar name)
-
-  arg .-> ret = emb (arg :-> ret)
-
-  unitT = emb Unit
-  fst .* snd = emb (fst :* snd)
-
-  boolT = emb Bool
-
-  listT = emb . List
-
   fromType = emb
 
 
