@@ -8,7 +8,6 @@ import Data.Functor.Classes
 import Data.Functor.Classes.Generic
 import Data.Functor.Foldable (Base, Fix(..), Recursive(..), unfix)
 import Data.Name
-import Data.Rec
 import qualified Data.Set as Set
 import Data.Subst
 import GHC.Generics
@@ -87,8 +86,8 @@ instance (Ord1  ty, Ord  size) => Ord1  (Sized ty size) where liftCompare   = ge
 instance (Show1 ty, Show size) => Show1 (Sized ty size) where liftShowsPrec = genericLiftShowsPrec
 
 
-totalToPartial :: (Embeddable1 ty expr, Functor ty) => Total ty -> Partial error expr
-totalToPartial = cata emb
+totalToPartial :: Typical1 ty => Total Type -> Partial error ty
+totalToPartial = cata fromType
 
 partialToTotal :: (Functor (error ty), Traversable ty) => Partial error ty -> Either [error ty (Partial error ty)] (Total ty)
 partialToTotal = para (\ partial -> case partial of
@@ -239,28 +238,6 @@ instance Substitutable1 replacement ty => Substitutable1 replacement (Error ty) 
 instance Substitutable1 ty functor => Substitutable1 ty (Sized functor size) where
   liftSubstitute recur subst (Sized size ty) = first (Sized size) (liftSubstitute recur subst ty)
 
-
-instance Embeddable1 ty functor => Embeddable ty (Partial error functor) where
-  emb = Cont . emb1
-
-  unemb (Cont ty) = unemb1 ty
-  unemb _         = Nothing
-
-instance Embeddable1 ty functor => Embeddable1 ty (PartialF error functor) where
-  emb1 = ContF . emb1
-
-  unemb1 (ContF ty) = unemb1 ty
-  unemb1 _          = Nothing
-
-instance (Monoid size, Embeddable1 ty functor) => Embeddable1 ty (Sized functor size) where
-  emb1 = Sized mempty . emb1
-
-  unemb1 = unemb1 . sizedType
-
-instance Embeddable1 Type Type where
-  emb1 = id
-
-  unemb1 = Just
 
 -- $setup
 -- >>> import Test.QuickCheck
