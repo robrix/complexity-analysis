@@ -1,13 +1,14 @@
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
 module Analysis.Elaboration where
 
+import Control.Monad.Except
 import Control.Monad.Fresh
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Context
 import Data.Expr as Expr
 import Data.FreeVariables
-import Data.Functor.Foldable (Fix(..))
+import Data.Functor.Foldable (Fix(..), cata)
 import Data.Maybe (fromMaybe)
 import Data.Name
 import Data.Rec
@@ -16,7 +17,10 @@ import qualified Data.Set as Set
 import Data.Subst
 import Data.Type as Type
 
-type Elab size = StateT (Subst (Partial Error (Sized Type size))) (ReaderT (Context (Partial Error (Sized Type size))) Fresh)
+type Elab size = StateT (Subst (Partial Error (Sized Type size)))
+               ( ReaderT (Context (Partial Error (Sized Type size)))
+               ( FreshT
+               ( Except Error)))
 
 data Error
   = FreeVariable Name
@@ -24,8 +28,8 @@ data Error
   | InfiniteType Name (Total Type)
   deriving (Eq, Ord, Show)
 
-runElab :: Elab size a -> (a, Subst (Partial Error (Sized Type size)))
-runElab = fst . flip runFresh (Name 0) . flip runReaderT (Context []) . flip runStateT mempty
+runElab :: Elab size a -> Either Error (a, Subst (Partial Error (Sized Type size)))
+runElab = fmap fst . runExcept . flip runFreshT (Name 0) . flip runReaderT (Context []) . flip runStateT mempty
 
 elaborate :: Semiring size => Term Expr -> Elab size (Rec (Ann Expr) (Partial Error (Sized Type size)))
 elaborate term = do
@@ -104,12 +108,19 @@ unify (Cont (Sized s1 t1)) (Cont (Sized s2 t2))
   | Type.Unit  <- t1, Type.Unit  <- t2 = pure unitT
   | Type.Bool  <- t1, Type.Bool  <- t2 = pure boolT
   | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
-  | otherwise                          = pure (Fault (TypeMismatch (Sized s1 t1) (Sized s2 t2)))
+  | otherwise                          = case (traverse partialToTotal t1, traverse partialToTotal t2) of
+    (Right t1,     Right t2)     -> pure (Fault (TypeMismatch (Fix (cata (Fix . sizedType) <$> t1)) (Fix (cata (Fix . sizedType) <$> t2))))
+    (Left (err:_), _)            -> throwError err
+    (_           , Left (err:_)) -> throwError err
+    _                            -> error "no errors but somehow still failed"
 
 bind :: Monoid size => Name -> Sized Type size (Partial Error (Sized Type size)) -> Elab size (Partial Error (Sized Type size))
-bind name (Sized size ty)
+bind name (Sized _ ty)
   | TVar name' <- ty, name == name'     = pure (fromType ty)
-  | Set.member name (freeVariables1 ty) = pure (Fault (InfiniteType name (Sized size ty)))
+  | Set.member name (freeVariables1 ty) = case traverse partialToTotal ty of
+    Right ty     -> pure (Fault (InfiniteType name (Fix (cata (Fix . sizedType) <$> ty))))
+    Left (err:_) -> throwError err
+    _            -> error "no errors but somehow still failed"
   | otherwise                           = do
     subst <- get
     let ty' = substitute subst (fromType ty)
