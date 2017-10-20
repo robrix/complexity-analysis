@@ -129,6 +129,15 @@ class Typical t where
 
   fromType :: Type t -> t
 
+class Typical1 t where
+  fromType1 :: Type a -> t a
+
+instance Typical1 Type where
+  fromType1 = id
+
+instance Monoid size => Typical1 (Sized Type size) where
+  fromType1 = Sized mempty
+
 
 instance Typical (Total Type) where
   fromType = emb
