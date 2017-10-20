@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
 module Data.Expr where
 
-import Data.Bifunctor (first)
+import Data.Bifunctor
 import Data.FreeVariables
 import Data.Functor.Classes.Generic
 import Data.Functor.Foldable (Fix(..), cata)
@@ -38,6 +38,9 @@ data Ann expr ann recur = Ann ann (expr recur)
 instance (Eq1   expr, Eq   ann) => Eq1   (Ann expr ann) where liftEq        = genericLiftEq
 instance (Ord1  expr, Ord  ann) => Ord1  (Ann expr ann) where liftCompare   = genericLiftCompare
 instance (Show1 expr, Show ann) => Show1 (Ann expr ann) where liftShowsPrec = genericLiftShowsPrec
+
+instance Functor expr => Bifunctor (Ann expr) where
+  bimap f g (Ann ann expr) = Ann (f ann) (fmap g expr)
 
 ann :: Rec (Ann expr) ann -> ann
 ann (Rec (Ann ann _)) = ann
