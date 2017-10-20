@@ -31,70 +31,70 @@ runElab :: Elab size a -> Either (Error (Rec (Sized Type) size)) (a, Subst (Rec 
 runElab = fmap fst . runExcept . flip runFreshT (Name 0) . flip runReaderT (Context []) . flip runStateT mempty
 
 elaborate :: Semiring size => Term Expr -> Elab size (Rec (Ann Expr) (Rec (Sized Type) size))
-elaborate term = do
-  term' <- infer term
+elaborate tm = do
+  tm' <- infer tm
   subst <- get
-  let Rec (Ann ty tm) = substitute subst term'
-  pure (Rec (Ann (generalize ty) tm))
+  let Rec (Ann ty' tm'') = substitute subst tm'
+  pure (term (generalize ty') tm'')
 
 infer :: Semiring size => Term Expr -> Elab size (Rec (Ann Expr) (Rec (Sized Type) size))
 infer (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (contextExtend n (tvar t)) (infer b)
-  pure (Rec (Ann (tvar t .-> ann b') (Abs n b')))
+  pure (term (tvar t .-> ann b') (Abs n b'))
 infer (Fix (Var name)) = do
   context <- ask
   case contextLookup name context of
-    Just ty -> pure (Rec (Ann ty (Var name)))
+    Just ty -> pure (term ty (Var name))
     Nothing -> throwError (FreeVariable name)
 infer (Fix (App f a)) = do
   t <- fresh
   a' <- infer a
   f' <- check f ((one <>) `modifySize` (ann a' .-> tvar t))
-  pure (Rec (Ann (tvar t) (App f' a')))
+  pure (term (tvar t) (App f' a'))
 infer (Fix (LetRec n b)) = do
   t <- fresh
   local (contextExtend n (tvar t)) (check b (tvar t))
-infer (Fix Expr.Unit) = pure (Rec (Ann unitT Expr.Unit))
+infer (Fix Expr.Unit) = pure (term unitT Expr.Unit)
 infer (Fix (Pair fst snd)) = do
   fst' <- infer fst
   snd' <- infer snd
-  pure (Rec (Ann (ann fst' .* ann snd') (Pair fst' snd')))
+  pure (term (ann fst' .* ann snd') (Pair fst' snd'))
 infer (Fix (Fst pair)) = do
   t1 <- fresh
   t2 <- fresh
   pair' <- check pair (tvar t1 .* tvar t2)
-  pure (Rec (Ann (tvar t1) (Fst pair')))
+  pure (term (tvar t1) (Fst pair'))
 infer (Fix (Snd pair)) = do
   t1 <- fresh
   t2 <- fresh
   pair' <- check pair (tvar t1 .* tvar t2)
-  pure (Rec (Ann (tvar t2) (Snd pair')))
+  pure (term (tvar t2) (Snd pair'))
 infer (Fix (Expr.Bool b)) = pure (Rec (Ann boolT (Expr.Bool b)))
 infer (Fix (If c t e)) = do
   c' <- check c boolT
   t' <- infer t
   e' <- infer e
   result <- unify (ann t') (ann e')
-  pure (Rec (Ann result (If c' t' e')))
+  pure (term result (If c' t' e'))
 infer (Fix (Cons h t)) = do
   a <- fresh
   h' <- check h (tvar a)
   t' <- check t (listT (tvar a))
-  pure (Rec (Ann (listT (tvar a)) (Cons h' t')))
-infer (Fix Nil) = Rec . flip Ann Nil . listT . tvar <$> fresh
+  pure (term (listT (tvar a)) (Cons h' t'))
+infer (Fix Nil) = flip term Nil . listT . tvar <$> fresh
 infer (Fix (Unlist empty full list)) = do
   a <- fresh
   empty' <- infer empty
   full' <- check full (tvar a .-> listT (tvar a) .-> ann empty')
   list' <- check list (listT (tvar a))
-  pure (Rec (Ann (ann empty') (Unlist empty' full' list')))
+  pure (term (ann empty') (Unlist empty' full' list'))
 
 check :: Semiring size => Term Expr -> Rec (Sized Type) size -> Elab size (Rec (Ann Expr) (Rec (Sized Type) size))
-check term ty = do
-  term' <- infer term
-  termTy <- unify (ann term') ty
-  pure (Rec (Ann termTy (expr term')))
+check tm ty = do
+  tm' <- infer tm
+  ty' <- unify (ann tm') ty
+  pure (term ty' (expr tm'))
 
 
 unify :: Monoid size => Rec (Sized Type) size -> Rec (Sized Type) size -> Elab size (Rec (Sized Type) size)
