@@ -11,6 +11,7 @@ import Data.Functor.Foldable (Fix(..))
 import Data.Maybe (fromMaybe)
 import Data.Name
 import Data.Rec
+import Data.Semiring
 import qualified Data.Set as Set
 import Data.Subst
 import Data.Type as Type
@@ -20,14 +21,14 @@ type Elab size = StateT (Subst (Partial Error (Sized Type size))) (ReaderT (Cont
 runElab :: Elab size a -> (a, Subst (Partial Error (Sized Type size)))
 runElab = fst . flip runFresh (Name 0) . flip runReaderT (Context []) . flip runStateT mempty
 
-elaborate :: Monoid size => Term Expr -> Elab size (Rec (Ann Expr) (Partial Error (Sized Type size)))
+elaborate :: Semiring size => Term Expr -> Elab size (Rec (Ann Expr) (Partial Error (Sized Type size)))
 elaborate term = do
   term' <- infer term
   subst <- get
   let Rec (Ann ty tm) = substitute subst term'
   pure (Rec (Ann (generalize ty) tm))
 
-infer :: Monoid size => Term Expr -> Elab size (Rec (Ann Expr) (Partial Error (Sized Type size)))
+infer :: Semiring size => Term Expr -> Elab size (Rec (Ann Expr) (Partial Error (Sized Type size)))
 infer (Fix (Abs n b)) = do
   t <- fresh
   b' <- local (contextExtend n (tvar t)) (infer b)
@@ -38,7 +39,7 @@ infer (Fix (Var name)) = do
 infer (Fix (App f a)) = do
   t <- fresh
   a' <- infer a
-  f' <- check f (ann a' .-> tvar t)
+  f' <- check f ((one <>) `modifySize` (ann a' .-> tvar t))
   pure (Rec (Ann (tvar t) (App f' a')))
 infer (Fix (LetRec n b)) = do
   t <- fresh
@@ -78,7 +79,7 @@ infer (Fix (Unlist empty full list)) = do
   list' <- check list (listT (tvar a))
   pure (Rec (Ann (ann empty') (Unlist empty' full' list')))
 
-check :: Monoid size => Term Expr -> Partial Error (Sized Type size) -> Elab size (Rec (Ann Expr) (Partial Error (Sized Type size)))
+check :: Semiring size => Term Expr -> Partial Error (Sized Type size) -> Elab size (Rec (Ann Expr) (Partial Error (Sized Type size)))
 check term ty = do
   term' <- infer term
   termTy <- unify (ann term') ty
