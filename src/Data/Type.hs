@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, TypeFamilies, UndecidableInstances #-}
 module Data.Type where
 
-import Data.Bifunctor (first)
+import Data.Bifunctor
 import Data.Either (fromLeft)
 import Data.FreeVariables
 import Data.Functor.Classes
@@ -84,6 +84,10 @@ sizedType (Sized _ ty) = ty
 instance (Eq1   ty, Eq   size) => Eq1   (Sized ty size) where liftEq        = genericLiftEq
 instance (Ord1  ty, Ord  size) => Ord1  (Sized ty size) where liftCompare   = genericLiftCompare
 instance (Show1 ty, Show size) => Show1 (Sized ty size) where liftShowsPrec = genericLiftShowsPrec
+
+instance Functor ty => Bifunctor (Sized ty) where
+  bimap f g (Sized size ty) = Sized (f size) (fmap g ty)
+
 
 
 totalToPartial :: Typical1 ty => Total Type -> Partial error ty
