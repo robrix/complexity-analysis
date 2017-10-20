@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Analysis.Elaboration where
 
 import Control.Monad.Except
@@ -98,16 +98,21 @@ check term ty = do
 
 
 unify :: Monoid size => Rec (Sized Type) size -> Rec (Sized Type) size -> Elab size (Rec (Sized Type) size)
-unify (Rec (Sized s1 t1)) (Rec (Sized s2 t2))
-  | TVar name1 <- t1                   = bind name1 (Rec (Sized s2 t2))
-  |                   TVar name2 <- t2 = bind name2 (Rec (Sized s1 t1))
-  | ForAll{}   <- t1, ForAll{}   <- t2 = fresh >>= \ n -> makeForAllT n <$> unify (specialize t1 n) (specialize t2 n)
-  | a1 :-> b1  <- t1, a2 :-> b2  <- t2 = (.->) <$> unify a1 a2 <*> unify b1 b2
-  | a1 :*  b1  <- t1, a2 :*  b2  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
-  | Type.Unit  <- t1, Type.Unit  <- t2 = pure unitT
-  | Type.Bool  <- t1, Type.Bool  <- t2 = pure boolT
-  | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
-  | otherwise                          = throwError (TypeMismatch (Rec (Sized s1 t1)) (Rec (Sized s2 t2)))
+unify t1 t2 = do
+  subst <- get
+  ty <- go (substitute subst t1) (substitute subst t2)
+  subst' <- get
+  pure (substitute subst' ty)
+  where go (Rec (Sized s1 t1)) (Rec (Sized s2 t2))
+          | TVar name1 <- t1                   = bind name1 (Rec (Sized s2 t2))
+          |                   TVar name2 <- t2 = bind name2 (Rec (Sized s1 t1))
+          | ForAll{}   <- t1, ForAll{}   <- t2 = fresh >>= \ n -> makeForAllT n <$> unify (specialize t1 n) (specialize t2 n)
+          | a1 :-> b1  <- t1, a2 :-> b2  <- t2 = (.->) <$> unify a1 a2 <*> unify b1 b2
+          | a1 :*  b1  <- t1, a2 :*  b2  <- t2 = (.*)  <$> unify a1 a2 <*> unify b1 b2
+          | Type.Unit  <- t1, Type.Unit  <- t2 = pure unitT
+          | Type.Bool  <- t1, Type.Bool  <- t2 = pure boolT
+          | List a1    <- t1, List a2    <- t2 = listT <$> unify a1 a2
+          | otherwise                          = throwError (TypeMismatch (Rec (Sized s1 t1)) (Rec (Sized s2 t2)))
 
 bind :: Monoid size => Name -> Rec (Sized Type) size -> Elab size (Rec (Sized Type) size)
 bind name ty
