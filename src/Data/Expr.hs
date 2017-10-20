@@ -42,6 +42,9 @@ instance (Show1 expr, Show ann) => Show1 (Ann expr ann) where liftShowsPrec = ge
 instance Functor expr => Bifunctor (Ann expr) where
   bimap f g (Ann ann expr) = Ann (f ann) (fmap g expr)
 
+term :: ann -> expr (Rec (Ann expr) ann) -> Rec (Ann expr) ann
+term ann expr = Rec (Ann ann expr)
+
 ann :: Rec (Ann expr) ann -> ann
 ann (Rec (Ann ann _)) = ann
 
